@@ -1,4 +1,2 @@
 dist/*
 public/*
-coverage/*
-src/**/*.svelte

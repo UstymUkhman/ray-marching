@@ -27,11 +27,9 @@
     "strict": true,
 
     "typeRoots": ["node_modules/@types"],
-    "types": ["svelte", "jest", "node"],
+    "types": ["node"],
 
     "paths": {
-      "@assets/*": ["src/assets/*"],
-      "@scss/*": ["src/scss/*"],
       "@/*": ["src/*"]
     },
 
@@ -44,22 +42,13 @@
   "include": [
     "src/**/*.js",
     "src/**/*.ts",
-    "src/**/*.jsx",
-    "src/**/*.tsx",
-    "src/**/*.d.ts",
-    "src/**/*.svelte",
-    "tests/**/*.jsx",
-    "tests/**/*.tsx",
-    "tests/**/*.ts",
-    "tests/**/*.js"
+    "src/**/*.d.ts"
   ],
 
   "exclude": [
     "node_modules",
     "typings",
     "public",
-    "build",
-    "dist",
-    "app"
+    "dist"
   ]
 }

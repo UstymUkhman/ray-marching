@@ -38,7 +38,6 @@
     "window": false,
     "before": true,
     "expect": true,
-    "THREE": false,
     "sinon": true,
     "it": true
   },

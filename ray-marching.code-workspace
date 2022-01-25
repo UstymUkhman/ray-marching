@@ -1,0 +1,28 @@
+{
+	"settings": {
+		"js-import.plainFileSuffix": "frag,fs,glsl,vert,vs",
+    "js-import.filesToScan": "**/*.{ts,js}",
+
+		"vetur.validation.template": false,
+		"git.ignoreLimitWarning": true,
+		"js-import.semicolon": true,
+
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": false
+		},
+
+		"js-import.alias": {
+      "@": "/src"
+    },
+
+		"eslint.validate": [
+      "typescript",
+      "javascript"
+    ],
+  },
+
+  "folders": [{
+		"name": "Ray Marching",
+    "path": "."
+	}]
+}

@@ -3,12 +3,10 @@ import { defineConfig } from 'vite';
 
 import glsl from 'vite-plugin-glsl';
 import { version } from './package.json';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
-  assetsInclude: ['fbx', 'glb', 'gltf', 'wat'],
-  plugins: [svelte(), glsl()],
   base: './',
+  plugins: [glsl()],
 
   define: {
     'import.meta.env.BUILD': JSON.stringify(version)
@@ -16,8 +14,6 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@assets': path.resolve(__dirname, 'src/assets'),
-      '@scss': path.resolve(__dirname, 'src/scss'),
       '@': path.resolve(__dirname, 'src')
     }
   },
