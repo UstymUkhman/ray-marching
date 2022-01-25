@@ -22,3 +22,12 @@ declare module '*.glsl' {
 	const value: string;
 	export default value;
 }
+
+type ShaderType =
+  WebGLRenderingContextBase['VERTEX_SHADER'] |
+  WebGLRenderingContextBase['FRAGMENT_SHADER'];
+
+interface RayMarchingProgram extends WebGLProgram
+{
+  position: number
+}

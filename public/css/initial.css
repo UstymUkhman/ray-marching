@@ -47,6 +47,15 @@ body {
   z-index: 0;
 }
 
+canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+
+  padding: 0;
+  margin: 0;
+}
+
 .disabled-js,
 .not-supported {
   text-align: center;
@@ -119,25 +128,11 @@ body {
 }
 
 .no-js .disabled-js,
-.ms-ie .not-supported,
-.no-webgl .not-supported,
-.no-canvas .not-supported,
-.no-history .not-supported,
-.no-es5object .not-supported,
-.no-canvastext .not-supported,
-.no-csstransforms3d .not-supported,
-.no-csspointerevents .not-supported {
+.ms-ie .not-supported {
   display: block !important;
 }
 
-.no-js #root,
-.no-webgl #root,
-.no-canvas #root,
-.no-history #root,
-.no-es5object #root,
-.no-canvastext #root,
-.no-csstransforms3d #root,
-.no-csspointerevents #root {
+.no-js #root {
   display: none !important;
 }
 
