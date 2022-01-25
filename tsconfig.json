@@ -1,0 +1,65 @@
+{
+  "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "importsNotUsedAsValues": "error",
+    "noUnusedParameters": false,
+    "noImplicitOverride": true,
+    "moduleResolution": "node",
+
+    "noImplicitReturns": true,
+    "resolveJsonModule": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noUnusedLocals": true,
+    "importHelpers": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+
+    "module": "ESNext",
+    "target": "ES2020",
+    "sourceMap": true,
+    "jsx": "preserve",
+    "checkJs": true,
+    "allowJs": true,
+    "baseUrl": ".",
+    "strict": true,
+
+    "typeRoots": ["node_modules/@types"],
+    "types": ["svelte", "jest", "node"],
+
+    "paths": {
+      "@assets/*": ["src/assets/*"],
+      "@scss/*": ["src/scss/*"],
+      "@/*": ["src/*"]
+    },
+
+    "lib": [
+      "esnext",
+      "dom"
+    ]
+  },
+
+  "include": [
+    "src/**/*.js",
+    "src/**/*.ts",
+    "src/**/*.jsx",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
+    "src/**/*.svelte",
+    "tests/**/*.jsx",
+    "tests/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.js"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "typings",
+    "public",
+    "build",
+    "dist",
+    "app"
+  ]
+}
