@@ -4,27 +4,26 @@ import FRAGMENT_SHADER from '@/glsl/main.frag';
 export default class RayMarching
 {
   private readonly gl: WebGL2RenderingContext;
+  private resolution: WebGLUniformLocation | null = null;
 
-  private readonly onRender = this.render.bind(this);
-  private readonly onResize = this.resize.bind(this);
-
-  public constructor (scene: HTMLCanvasElement)
-  {
+  public constructor (scene: HTMLCanvasElement) {
     this.gl = this.createContext(scene);
-    window.addEventListener('resize', this.onResize);
-
     const program = this.createProgram();
-    program && this.createScene(program);
+
+    if (program) {
+      this.createScene(program);
+      requestAnimationFrame(this.render.bind(this));
+      window.addEventListener('resize', this.resize.bind(this));
+    }
   }
 
-  private createContext (scene: HTMLCanvasElement): WebGL2RenderingContext
-  {
+  private createContext (scene: HTMLCanvasElement): WebGL2RenderingContext {
     return scene.getContext('webgl2', {
       powerPreference: 'high-performance',
       failIfMajorPerformanceCaveat: true,
       preserveDrawingBuffer: false,
       premultipliedAlpha: true,
-      desynchronized: false,
+      desynchronized: true, // false,
       xrCompatible: false,
       antialias: true,
       stencil: true,
@@ -33,29 +32,25 @@ export default class RayMarching
     }) as WebGL2RenderingContext;
   }
 
-  private createProgram (): RayMarchingProgram | void
-  {
+  private createProgram (): RayMarchingProgram | void {
     const program = this.gl.createProgram() as RayMarchingProgram;
     const vertex = this.loadShader(VERTEX_SHADER, this.gl.VERTEX_SHADER);
     const fragment = this.loadShader(FRAGMENT_SHADER, this.gl.FRAGMENT_SHADER);
 
-    if (vertex && fragment)
-    {
+    if (vertex && fragment) {
       this.gl.attachShader(program, vertex);
       this.gl.attachShader(program, fragment);
       this.gl.linkProgram(program);
     }
 
-    if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS))
-    {
+    if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
       return console.error(this.gl.getProgramInfoLog(program));
     }
 
     return program;
   }
 
-  private createScene (program: RayMarchingProgram): void
-  {
+  private createScene (program: RayMarchingProgram): void {
     const BUFFER = this.gl.createBuffer();
 
     const COORDS = new Float32Array([
@@ -79,24 +74,22 @@ export default class RayMarching
     this.gl.bufferData(this.gl.ARRAY_BUFFER, COORDS, this.gl.STATIC_DRAW);
 
     program.position = this.gl.getAttribLocation(program, 'position');
+    this.resolution = this.gl.getUniformLocation(program, 'resolution');
 
     this.gl.enableVertexAttribArray(program.position);
     this.gl.vertexAttribPointer(program.position, 2.0, this.gl.FLOAT, false, 0.0, 0.0);
 
-    this.resize();
     this.gl.useProgram(program);
-    requestAnimationFrame(this.onRender);
+    this.resize();
   }
 
-  private loadShader (source: string, type: ShaderType): WebGLShader | void
-  {
+  private loadShader (source: string, type: ShaderType): WebGLShader | void {
     const shader = this.gl.createShader(type) as WebGLShader;
 
     this.gl.shaderSource(shader, source);
     this.gl.compileShader(shader);
 
-    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS))
-    {
+    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
       console.error(this.gl.getShaderInfoLog(shader));
       return this.gl.deleteShader(shader);
     }
@@ -104,18 +97,17 @@ export default class RayMarching
     return shader;
   }
 
-  private render (): void
-  {
+  private render (): void {
     this.gl.drawArrays(this.gl.TRIANGLES, 0.0, 6.0);
-    requestAnimationFrame(this.onRender);
+    requestAnimationFrame(this.render.bind(this));
   }
 
-  private resize (): void
-  {
+  private resize (): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
     this.gl.viewport(0.0, 0.0, width, height);
+    this.gl.uniform2fv(this.resolution, [width, height]);
 
     this.gl.canvas.height = height;
     this.gl.canvas.width = width;
