@@ -1,6 +1,6 @@
 {
   "name": "ray-marching",
-  "description": "GLSL Ray Marching Experiment",
+  "description": "GLSL RayMarching Experiment",
   "author": "Ustym Ukhman <ustym.ukhman@gmail.com>",
   "homepage": "https://github.com/UstymUkhman/ray-marching#readme",
   "main": "src/main.ts",

@@ -1,6 +1,6 @@
-# [Ray Marching](https://ustymukhman.github.io/ray-marching/dist) #
+# [RayMarching](https://ustymukhman.github.io/ray-marching/dist) #
 
-*GLSL Ray Marching Experiment*
+*GLSL RayMarching Experiment*
 
 ![GitHub deployments](https://img.shields.io/github/deployments/UstymUkhman/ray-marching/github-pages)
 ![GitHub repo size](https://img.shields.io/github/repo-size/UstymUkhman/ray-marching)

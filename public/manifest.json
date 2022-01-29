@@ -1,11 +1,11 @@
 {
   "scope": "/",
   "start_url": "/",
-  "name": "Ray Marching",
+  "name": "RayMarching",
   "display": "standalone",
   "orientation": "portrait",
-  "short_name": "Ray Marching",
-  "description": "GLSL Ray Marching Experiment",
+  "short_name": "RayMarching",
+  "description": "GLSL RayMarching Experiment",
   "icons": [{
     "src": "\/favicon\/android-icon-36x36.png",
     "purpose": "any maskable",

@@ -22,7 +22,7 @@
   },
 
   "folders": [{
-		"name": "Ray Marching",
+		"name": "RayMarching",
     "path": "."
 	}]
 }
