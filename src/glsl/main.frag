@@ -17,7 +17,10 @@ out vec4 fragColor;
 // Field of View:
 const float FOV = 1.0;
 
-// Objects IDs:
+// Gamma Correction:
+const float GAMMA = 1.0 / 2.2;
+
+// Object IDs:
 struct ID
 {
   int plane;
@@ -25,6 +28,13 @@ struct ID
 };
 
 const ID IDs = ID(1, 2);
+
+// Object colors:
+const vec3 COLORS[2] = vec3[2]
+(
+  vec3(0.0, 0.5, 0.5), // Plane
+  vec3(0.9, 0.9, 0.0)  // Sphere
+);
 
 // Ray configs:
 struct Ray
@@ -45,9 +55,6 @@ vec2 mergeObjects (in vec2 object1, in vec2 object2) {
 
 // Map ray to scene:
 vec2 mapScene (in vec3 ray) {
-  // Infinite objects repetition:
-  // ray = mod(ray, 3.0) - 3.0 * 0.5;
-
   // Create bottom plane (ground):
   float planeDistance = fPlane(ray, vec3(0.0, 1.0, 0.0), 1.0);
 
@@ -110,7 +117,40 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   vec3 surfaceNormal = getSurfaceNormal(position);
 
   float reflected = dot(lightDirection, surfaceNormal);
-  return color * clamp(reflected, 0.0, 1.0);
+  vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
+
+  // Get shadows by comparing distance from current
+  // position to the closest object with distance
+  // (from current position) to the light source:
+  float lightDistance = length(LIGHT - position);
+
+  float objectDistance = rayMarch(
+    position + surfaceNormal * 0.02,
+    normalize(LIGHT)
+  ).x;
+
+  // Distance to object is smaller than distance
+  // to the light source, this point is in shadow:
+  if (objectDistance < lightDistance) {
+    return vec3(0.0);
+  }
+
+  return diffuse;
+}
+
+vec3 getColorByID (in float id, in vec3 position) {
+  int ID = int(id) - 1;
+
+  // Plane:
+  if (ID == 0) {
+    return vec3(0.3 + 0.2 * mod(
+      floor(position.x) +
+      floor(position.z),
+      2.0
+    ));
+  }
+
+  return COLORS[ID];
 }
 
 // Initialize ray origin and direction for
@@ -129,8 +169,10 @@ void render (inout vec3 color, in vec2 uv) {
     // origin, direction and hitted object's position:
     vec3 position = rayOrigin + object.x * rayDirection;
 
+    vec3 objectColor = getColorByID(object.y, position);
+
     // Define object color and lighting when hitted:
-    color += getLight(position, rayDirection, vec3(1.0));
+    color += getLight(position, rayDirection, objectColor);
   }
 }
 
@@ -141,6 +183,8 @@ void main (void) {
   vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / resolution.y;
 
   render(color, uv);
+
+  color = pow(color, vec3(GAMMA));
 
   fragColor = vec4(color, 1.0);
 }
