@@ -14,6 +14,9 @@ uniform vec2 resolution;
 // Output color:
 out vec4 fragColor;
 
+// Focal Length:
+const float FL = 2.5;
+
 // Field of View:
 const float FOV = 1.0;
 
@@ -71,7 +74,7 @@ vec2 mapScene (in vec3 ray) {
 }
 
 // RayMarching loop:
-vec2 rayMarch (in vec3 origin, in vec3 direction) {
+vec2 raycast (in vec3 origin, in vec3 direction) {
   vec2 distance, object;
 
   for (int i = 0; i < RAY.steps; i++) {
@@ -97,7 +100,7 @@ vec2 rayMarch (in vec3 origin, in vec3 direction) {
 vec3 getSurfaceNormal (in vec3 position) {
   // Approximation hack to get vector normal by subtracting
   // a small number from a given position on object's surface:
-  vec2 epsilon = vec2(RAY.epsilon, 0.0);
+  /* vec2 epsilon = vec2(RAY.epsilon, 0.0);
 
   vec3 normal = vec3(
     mapScene(position).x - vec3(
@@ -106,6 +109,33 @@ vec3 getSurfaceNormal (in vec3 position) {
       mapScene(position - epsilon.yyx).x
     )
   );
+
+  return normalize(normal); */
+
+  // https://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
+  /* vec2 epsilon = vec2(1.0, -1.0) * 0.5773 * 0.0005;
+
+  return normalize(
+    epsilon.xyy * mapScene(position + epsilon.xyy).x +
+    epsilon.yyx * mapScene(position + epsilon.yyx).x +
+    epsilon.yxy * mapScene(position + epsilon.yxy).x +
+    epsilon.xxx * mapScene(position + epsilon.xxx).x
+  ); */
+
+  // A way to prevent the compiler from inlining "mapScene" 4 times:
+  vec3 normal = vec3(0.0);
+
+  for (int i = 0; i < 4; i++) {
+    vec3 epsilon = (
+      vec3(
+        (((i + 3) >> 1) & 1),
+        ((i >> 1) & 1),
+        (i & 1)
+      ) * 2.0 - 1.0
+    ) * 0.5773;
+
+    normal += epsilon * mapScene(position + epsilon * 0.0005).x;
+  }
 
   return normalize(normal);
 }
@@ -124,7 +154,7 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   // (from current position) to the light source:
   float lightDistance = length(LIGHT - position);
 
-  float objectDistance = rayMarch(
+  float objectDistance = raycast(
     position + surfaceNormal * 0.02,
     normalize(LIGHT)
   ).x;
@@ -138,19 +168,35 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   return diffuse;
 }
 
-vec3 getColorByID (in float id, in vec3 position) {
-  int ID = int(id) - 1;
+vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy) {
+  // // https://iquilezles.org/www/articles/checkerfiltering/checkerfiltering.htm
+  // position *= 3.0;
+  // dpdx *= 3.0;
+  // dpdy *= 3.0;
 
-  // Plane:
-  if (ID == 0) {
-    return vec3(0.3 + 0.2 * mod(
-      floor(position.x) +
-      floor(position.z),
-      2.0
-    ));
-  }
+  // // Kernel Filter:
+  // vec2 w = abs(dpdx) + abs(dpdy) + 0.001;
 
-  return COLORS[ID];
+  // // Analytical integral (box filter):
+  // vec2 i = (
+  //   abs(fract((position - 0.5 * w) * 0.5) - 0.5) -
+  //   abs(fract((position + 0.5 * w) * 0.5) - 0.5)
+  // ) * 2.0 / w;
+
+  // // XOR pattern:
+  // float xor = 0.5 - i.x * i.y * 0.5;
+
+  // return xor * vec3(0.05) + 0.15;
+
+  return vec3(0.3 + 0.2 * mod(
+    floor(position.x) +
+    floor(position.y),
+    2.0
+  ));
+}
+
+vec3 getColorByID (in int id) {
+  return COLORS[id];
 }
 
 // Initialize ray origin and direction for
@@ -160,16 +206,34 @@ void render (inout vec3 color, in vec2 uv) {
   vec3 rayDirection = normalize(vec3(uv, FOV));
 
   // Get raymarching distance result:
-  vec2 object = rayMarch(rayOrigin, rayDirection);
+  vec2 object = raycast(rayOrigin, rayDirection);
 
   // Object hit, ray distance is
   // closer than max ray distance:
   if (object.x < RAY.distance) {
+    vec3 objectColor = vec3(0.0);
+    int objectID = int(object.y) - 1;
+
     // Define ray's current position based on its
     // origin, direction and hitted object's position:
     vec3 position = rayOrigin + object.x * rayDirection;
 
-    vec3 objectColor = getColorByID(object.y, position);
+    if (objectID == 0) {
+      // vec2 px = ((gl_FragCoord.xy + vec2(1.0, 0.0)) * 2.0 - resolution.xy) / resolution.y;
+      // vec2 py = ((gl_FragCoord.xy + vec2(0.0, 1.0)) * 2.0 - resolution.xy) / resolution.y;
+
+      // vec3 rayDirectionX = camera * normalize(vec3(px, FL));
+      // vec3 rayDirectionY = camera * normalize(vec3(py, FL));
+
+      vec3 dpdx = (rayDirection / rayDirection.y /* - rayDirectionX / rayDirectionX.y */) * rayOrigin.y;
+      vec3 dpdy = (rayDirection / rayDirection.y /* - rayDirectionY / rayDirectionY.y */) * rayOrigin.y;
+
+      objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz);
+    }
+
+    else {
+      objectColor = getColorByID(objectID);
+    }
 
     // Define object color and lighting when hitted:
     color += getLight(position, rayDirection, objectColor);

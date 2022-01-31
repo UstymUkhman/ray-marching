@@ -1,3 +1,5 @@
+// https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+
 import VERTEX_SHADER from '@/glsl/main.vert';
 import FRAGMENT_SHADER from '@/glsl/main.frag';
 
@@ -23,7 +25,7 @@ export default class RayMarching
       failIfMajorPerformanceCaveat: true,
       preserveDrawingBuffer: false,
       premultipliedAlpha: true,
-      desynchronized: true, // false,
+      desynchronized: true,
       xrCompatible: false,
       antialias: true,
       stencil: true,
