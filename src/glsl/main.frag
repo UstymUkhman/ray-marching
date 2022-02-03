@@ -40,19 +40,32 @@ vec2 raycast (in vec3 origin, in vec3 direction) {
   return object;
 }
 
-// Lambertian Shading Model
+// [Lambertian Shading Model]
 // REFLECTED_LIGHT = dot(LIGHT_DIRECTION, SURFACE_NORMAL):
 vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   vec3 lightDirection = normalize(LIGHT - position);
   vec3 surfaceNormal = getSurfaceNormal(position, 1);
 
-  float reflected = dot(lightDirection, surfaceNormal);
+  // [Phong Shading Model]
+  vec3 inverseDirection = -direction;
+  // Light reflection vector on surface:
+  vec3 reflection = reflect(-lightDirection, surfaceNormal);
+
+  // Apply scalar exponent to get mirrored component:
+  float reflected = dot(reflection, inverseDirection);
+  float reflectionBase = clamp(reflected, 0.0, 1.0);
+  vec3 specular = SPECULAR * pow(reflectionBase, 10.0);
+
+  reflected = dot(lightDirection, surfaceNormal);
   vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
 
   // Get shadows by comparing distance from current
   // position to the closest object with distance
   // (from current position) to the light source:
   float lightDistance = length(LIGHT - position);
+
+  // Ambient color:
+  vec3 ambient = color * AMBIENT;
 
   float objectDistance = raycast(
     position + surfaceNormal * 0.02,
@@ -62,10 +75,11 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   // Distance to object is smaller than distance
   // to the light source, this point is in shadow:
   if (objectDistance < lightDistance) {
-    return vec3(0.0);
+    return ambient;
   }
 
-  return diffuse;
+  // Light components sum:
+  return ambient + diffuse + specular;
 }
 
 vec3 getColorByID (in int id) {
@@ -111,7 +125,7 @@ void render (inout vec3 color, in vec2 uv) {
     // Define object color and lighting when hitted:
     color += getLight(position, rayDirection, objectColor);
 
-    // Exponential (2) fog:
+    // Exponential squared fog:
     float fogDepth = object.x * object.x;
     float fogFactor = 1.0 - exp(-FOG_DENSITY * fogDepth);
     color = mix(color, BACKGROUND, fogFactor);
