@@ -86,11 +86,22 @@ vec3 getColorByID (in int id) {
   return COLORS[id];
 }
 
+// [Camera]
+// Get forward vector from camera's position and orientation:
+mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
+  vec3 forward = normalize(vec3(lookAt - rayOrigin));
+  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+  vec3 up = cross(forward, right);
+
+  return mat3(right, up, forward);
+}
+
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
 void render (inout vec3 color, in vec2 uv) {
-  vec3 rayOrigin = vec3(0.0, 0.0, -3.0);
-  vec3 rayDirection = normalize(vec3(uv, FOV));
+  vec3 rayOrigin = vec3(0.0, 1.5, -5.0);
+  mat3 camera = getCamera(rayOrigin, LOOK_AT);
+  vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
   // Get raymarching distance result:
   vec2 object = raycast(rayOrigin, rayDirection);
@@ -106,16 +117,16 @@ void render (inout vec3 color, in vec2 uv) {
     vec3 position = rayOrigin + object.x * rayDirection;
 
     if (objectID == 0) {
-      // vec2 px = ((gl_FragCoord.xy + vec2(1.0, 0.0)) * 2.0 - resolution.xy) / resolution.y;
-      // vec2 py = ((gl_FragCoord.xy + vec2(0.0, 1.0)) * 2.0 - resolution.xy) / resolution.y;
+      vec2 px = ((gl_FragCoord.xy + vec2(1.0, 0.0)) * 2.0 - resolution.xy) / resolution.y;
+      vec2 py = ((gl_FragCoord.xy + vec2(0.0, 1.0)) * 2.0 - resolution.xy) / resolution.y;
 
-      // vec3 rayDirectionX = camera * normalize(vec3(px, FL));
-      // vec3 rayDirectionY = camera * normalize(vec3(py, FL));
+      vec3 rayDirectionX = camera * normalize(vec3(px, FOV));
+      vec3 rayDirectionY = camera * normalize(vec3(py, FOV));
 
-      vec3 dpdx = (rayDirection / rayDirection.y /* - rayDirectionX / rayDirectionX.y */) * rayOrigin.y;
-      vec3 dpdy = (rayDirection / rayDirection.y /* - rayDirectionY / rayDirectionY.y */) * rayOrigin.y;
+      vec3 dpdx = (rayDirection / rayDirection.y - rayDirectionX / rayDirectionX.y) * rayOrigin.y;
+      vec3 dpdy = (rayDirection / rayDirection.y - rayDirectionY / rayDirectionY.y) * rayOrigin.y;
 
-      objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, true);
+      objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
     else {

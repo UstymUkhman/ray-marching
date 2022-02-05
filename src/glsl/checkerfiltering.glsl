@@ -10,10 +10,6 @@ vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool sim
   }
 
   else {
-    position *= 3.0;
-    dpdx *= 3.0;
-    dpdy *= 3.0;
-
     // Kernel Filter:
     vec2 w = abs(dpdx) + abs(dpdy) + 0.001;
 
@@ -25,6 +21,6 @@ vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool sim
 
     // XOR pattern:
     float xor = 0.5 - i.x * i.y * 0.5;
-    return xor * vec3(0.05) + 0.15;
+    return xor * vec3(0.25) + 0.25;
   }
 }
