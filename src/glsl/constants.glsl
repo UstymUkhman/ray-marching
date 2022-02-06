@@ -24,7 +24,7 @@ struct Ray
 const float FOV          = 2.5;                     // Field of View
 const float GAMMA        = 1.0 / 2.2;               // Gamma Correction
 const vec3  LOOK_AT      = vec3(0.0);               // Camera orientation
-const vec3  POSITION     = vec3(0.0, -1.5, -5.0);   // Ray origin initial position
+const vec3  POSITION     = vec3(0.0, -5.0, -15.0);  // Ray origin initial position
 
 const ID  IDs            = ID(1, 2);                // Object IDs
 const Ray RAY            = Ray(256, 500.0, 0.001);  // Raycast configs
@@ -40,7 +40,7 @@ const vec3  LIGHT        = vec3(20.0, 40.0, -30.0); // Light color
 
 // Fog:
 const vec3  FOG_COLOR    = vec3(0.5);               // Fog color
-const float FOG_DENSITY  = 0.0005;                  // Fog density
+const float FOG_DENSITY  = 0.00025;                 // Fog density
 
 // Object colors:
 const vec3 COLORS[2] = vec3[2]

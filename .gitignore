@@ -12,4 +12,4 @@ pids
 .lock-wscript
 
 node_modules
-glsl/hg_sdf.glsl
+src/glsl/hg_sdf.glsl

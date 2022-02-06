@@ -10,8 +10,9 @@ export default class RayMarching
 {
   private pressed = false;
   private mousePosition = [0.0, 0.0];
-
   private readonly gl: WebGL2RenderingContext;
+
+  private time: WebGLUniformLocation | null = null;
   private mouse: WebGLUniformLocation | null = null;
   private resolution: WebGLUniformLocation | null = null;
 
@@ -91,6 +92,7 @@ export default class RayMarching
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, BUFFER);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, COORDS, this.gl.STATIC_DRAW);
 
+    this.time = this.gl.getUniformLocation(program, 'time');
     this.mouse = this.gl.getUniformLocation(program, 'mouse');
     this.resolution = this.gl.getUniformLocation(program, 'resolution');
 
@@ -117,8 +119,10 @@ export default class RayMarching
     return shader;
   }
 
-  private render (): void {
+  private render (delta: number): void {
+    this.gl.uniform1f(this.time, delta * 0.0001);
     this.gl.drawArrays(this.gl.TRIANGLES, 0.0, 6.0);
+
     requestAnimationFrame(this.render.bind(this));
   }
 
