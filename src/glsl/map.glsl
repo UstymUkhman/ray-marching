@@ -1,4 +1,4 @@
-#include "utils/hg_sdf.web.glsl";
+#include "primitives.glsl";
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {
   // Return closest object from the camera:
@@ -8,13 +8,13 @@ vec2 mergeObjects (in vec2 object1, in vec2 object2) {
 // Map ray to scene:
 vec2 mapScene (in vec3 ray) {
   // Create bottom plane (ground):
-  float planeDistance = fPlane(ray, vec3(0.0, 1.0, 0.0), 1.0);
+  float planeDistance = Plane(ray, vec3(0.0, 1.0, 0.0), 1.0);
 
   // Distance to plane with its ID:
   vec2 plane = vec2(planeDistance, IDs.plane);
 
   // Create a sphere at the center of the screen:
-  float sphereDistance = fSphere(ray, 1.0);
+  float sphereDistance = Sphere(ray, 1.0);
 
   // Distance to sphere with its ID:
   vec2 sphere = vec2(sphereDistance, IDs.sphere);

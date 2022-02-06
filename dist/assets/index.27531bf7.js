@@ -1,4 +1,4 @@
-const s=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))i(t);new MutationObserver(t=>{for(const o of t)if(o.type==="childList")for(const r of o.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&i(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const o={};return t.integrity&&(o.integrity=t.integrity),t.referrerpolicy&&(o.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?o.credentials="include":t.crossorigin==="anonymous"?o.credentials="omit":o.credentials="same-origin",o}function i(t){if(t.ep)return;t.ep=!0;const o=e(t);fetch(t.href,o)}};s();var a=`#version 300 es
+const a=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const s of i.addedNodes)s.tagName==="LINK"&&s.rel==="modulepreload"&&o(s)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};a();var l=`#version 300 es
 
 precision mediump float;
 
@@ -6,13 +6,15 @@ in vec2 position;
 
 void main (void) {
   gl_Position = vec4(position, 1.0, 1.0);
-}`,l=`#version 300 es
+}`,f=`#version 300 es
 
 #ifndef GL_FRAGMENT_PRECISION_HIGH
   precision mediump float;
 #else
   precision highp float;
 #endif
+
+uniform vec2 resolution;
 
 vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple) {
   if (simple) {
@@ -38,6 +40,13 @@ vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool sim
     return xor * vec3(0.25) + 0.25;
   }
 }
+#define PI          3.141592653589793
+#define RAD         PI * 0.5
+#define TAU         PI * 2.0
+
+#define PHI         sqrt(5.0) * 0.5 + 0.5
+#define saturate(x) clamp(x, 0.0, 1.0)
+
 struct ID
 {
   int plane;
@@ -54,11 +63,14 @@ struct Ray
 const float FOV          = 2.5;                     
 const float GAMMA        = 1.0 / 2.2;               
 const vec3  LOOK_AT      = vec3(0.0);               
+const vec3  POSITION     = vec3(0.0, -1.5, -5.0);   
 
 const ID  IDs            = ID(1, 2);                
 const Ray RAY            = Ray(256, 500.0, 0.001);  
 
 const float AMBIENT      = 0.05;                    
+const float FRESNEL      = 0.25;                    
+
 const vec3  SPECULAR     = vec3(0.5);               
 const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);     
 const vec3  LIGHT        = vec3(20.0, 40.0, -30.0); 
@@ -71,31 +83,37 @@ const vec3 COLORS[2] = vec3[2]
   vec3(0.0),                    
   vec3(0.54, 0.02745, 0.02745)  
 );
-/*************************************************************************************************
- *                                                                                               *
- * HG_SDF glsl library compatible with GLSL ES 3.00 standards for WebGL 2:                       *
- * https:
- *                                                                                               *
- * Build on top of HG_SDF glsl library for building signed distance                              *
- * functions by Mercury Demogroup: http:
- *                                                                                               *
- * Original source code can be found here:                                                       *
- * http:
- *                                                                                               *
- * MIT License:                                                                                  *
- * https:
- *                                                                                               *
- * Copyright (c) 2011-2021 Mercury Demogroup:                                                    *
- * https:
- *                                                                                               *
- *************************************************************************************************/
+mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
+  vec3 forward = normalize(vec3(lookAt - rayOrigin));
+  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+  vec3 up = cross(forward, right);
 
-float fSphere(vec3 p, float r) {
-	return length(p) - r;
+  return mat3(right, up, forward);
 }
 
-float fPlane(vec3 p, vec3 n, float distanceFromOrigin) {
-	return dot(p, n) + distanceFromOrigin;
+uniform vec2 mouse;
+
+void rotatePosition (inout vec2 position, float amount) {
+  position = position * cos(amount) +
+    vec2(position.y, -position.x) * sin(amount);
+}
+
+vec3 mouseMove (in vec3 origin) {
+  
+  vec2 coords = mouse / resolution;
+
+  
+  rotatePosition(origin.yz, coords.y * RAD - 0.5);
+  rotatePosition(origin.xz, coords.x * TAU);
+
+  return origin;
+}
+float Sphere (in vec3 position, in float radius) {
+	return length(position) - radius;
+}
+
+float Plane (in vec3 position, in vec3 normal, in float distanceFromOrigin) {
+	return dot(position, normal) + distanceFromOrigin;
 }
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {
@@ -105,13 +123,13 @@ vec2 mergeObjects (in vec2 object1, in vec2 object2) {
 
 vec2 mapScene (in vec3 ray) {
   
-  float planeDistance = fPlane(ray, vec3(0.0, 1.0, 0.0), 1.0);
+  float planeDistance = Plane(ray, vec3(0.0, 1.0, 0.0), 1.0);
 
   
   vec2 plane = vec2(planeDistance, IDs.plane);
 
   
-  float sphereDistance = fSphere(ray, 1.0);
+  float sphereDistance = Sphere(ray, 1.0);
 
   
   vec2 sphere = vec2(sphereDistance, IDs.sphere);
@@ -165,11 +183,6 @@ vec3 getSurfaceNormal (in vec3 position, in int complexity) {
 
   return normalize(normal);
 }
-
-uniform vec2 resolution;
-
-out vec4 fragColor;
-
 vec2 raycast (in vec3 origin, in vec3 direction) {
   vec2 distance, object;
 
@@ -216,6 +229,10 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   float lightDistance = length(LIGHT - position);
 
   
+  float fresnelAmount = dot(direction, surfaceNormal) + 1.0;
+  vec3 fresnel = pow(fresnelAmount, 3.0) * color * FRESNEL;
+
+  
   vec3 ambient = color * AMBIENT;
 
   float objectDistance = raycast(
@@ -226,27 +243,21 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   
   
   if (objectDistance < lightDistance) {
-    return ambient;
+    return ambient + fresnel;
   }
 
   
-  return ambient + diffuse + specular;
+  return ambient + fresnel + diffuse + specular;
 }
+
+out vec4 fragColor;
 
 vec3 getColorByID (in int id) {
   return COLORS[id];
 }
 
-mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
-  vec3 forward = normalize(vec3(lookAt - rayOrigin));
-  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-  vec3 up = cross(forward, right);
-
-  return mat3(right, up, forward);
-}
-
-void render (inout vec3 color, in vec2 uv) {
-  vec3 rayOrigin = vec3(0.0, 1.5, -5.0);
+vec3 render (in vec3 color, in vec2 uv) {
+  vec3 rayOrigin = mouseMove(POSITION);
   mat3 camera = getCamera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
@@ -293,17 +304,17 @@ void render (inout vec3 color, in vec2 uv) {
     
     color += BACKGROUND - max(0.9 * rayDirection.y, 0.0);
   }
+
+  return color;
 }
 
 void main (void) {
-  vec3 color = vec3(0.0);
-
   
   vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / resolution.y;
 
-  render(color, uv);
+  vec3 color = render(vec3(0.0), uv);
 
   color = pow(color, vec3(GAMMA));
 
   fragColor = vec4(color, 1.0);
-}`;class p{constructor(n){this.resolution=null,this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),requestAnimationFrame(this.render.bind(this)),window.addEventListener("resize",this.resize.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(a,this.gl.VERTEX_SHADER),i=this.loadShader(l,this.gl.FRAGMENT_SHADER);return e&&i&&(this.gl.attachShader(n,e),this.gl.attachShader(n,i),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),i=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,i,this.gl.STATIC_DRAW),n.position=this.gl.getAttribLocation(n,"position"),this.resolution=this.gl.getUniformLocation(n,"resolution"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const i=this.gl.createShader(e);return this.gl.shaderSource(i,n),this.gl.compileShader(i),this.gl.getShaderParameter(i,this.gl.COMPILE_STATUS)?i:(console.error(this.gl.getShaderInfoLog(i)),this.gl.deleteShader(i))}render(){this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}resize(){const n=window.innerWidth,e=window.innerHeight;this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new p(document.getElementById("scene"));
+}`;const d=(r,n=0,e=1)=>Math.max(n,Math.min(r,e)),c=5;class h{constructor(n){this.pressed=!1,this.mousePosition=[0,0],this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(l,this.gl.VERTEX_SHADER),o=this.loadShader(f,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}render(){this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=d(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new h(document.getElementById("scene"));

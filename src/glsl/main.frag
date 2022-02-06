@@ -6,100 +6,28 @@
   precision highp float;
 #endif
 
-#include "checkerfiltering.glsl";
-#include "constants.glsl";
-#include "normal.glsl";
-
 // Screen resolution:
 uniform vec2 resolution;
 
+#include "checkerfiltering.glsl";
+#include "constants.glsl";
+#include "camera.glsl";
+
+#include "mouse.glsl";
+#include "normal.glsl";
+#include "lighting.glsl";
+
 // Output color:
 out vec4 fragColor;
-
-// RayMarching loop:
-vec2 raycast (in vec3 origin, in vec3 direction) {
-  vec2 distance, object;
-
-  for (int i = 0; i < RAY.steps; i++) {
-    vec3 ray = origin + object.x * direction;
-
-    distance = mapScene(ray);
-
-    object.x += distance.x;
-    object.y  = distance.y;
-
-    // Ray is too far from the camera:
-    bool far = object.x > RAY.distance;
-
-    // Ray has hit the surface of an object:
-    bool close = abs(distance.x) < RAY.epsilon;
-
-    if (close || far) break;
-  }
-
-  return object;
-}
-
-// [Lambertian Shading Model]
-// REFLECTED_LIGHT = dot(LIGHT_DIRECTION, SURFACE_NORMAL):
-vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
-  vec3 lightDirection = normalize(LIGHT - position);
-  vec3 surfaceNormal = getSurfaceNormal(position, 1);
-
-  // [Phong Shading Model]
-  vec3 inverseDirection = -direction;
-  // Light reflection vector on surface:
-  vec3 reflection = reflect(-lightDirection, surfaceNormal);
-
-  // Apply scalar exponent to get mirrored component:
-  float reflected = dot(reflection, inverseDirection);
-  float reflectionBase = clamp(reflected, 0.0, 1.0);
-  vec3 specular = SPECULAR * pow(reflectionBase, 10.0);
-
-  reflected = dot(lightDirection, surfaceNormal);
-  vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
-
-  // Get shadows by comparing distance from current
-  // position to the closest object with distance
-  // (from current position) to the light source:
-  float lightDistance = length(LIGHT - position);
-
-  // Ambient color:
-  vec3 ambient = color * AMBIENT;
-
-  float objectDistance = raycast(
-    position + surfaceNormal * 0.02,
-    normalize(LIGHT)
-  ).x;
-
-  // Distance to object is smaller than distance
-  // to the light source, this point is in shadow:
-  if (objectDistance < lightDistance) {
-    return ambient;
-  }
-
-  // Light components sum:
-  return ambient + diffuse + specular;
-}
 
 vec3 getColorByID (in int id) {
   return COLORS[id];
 }
 
-// [Camera]
-// Get forward vector from camera's position and orientation:
-mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
-  vec3 forward = normalize(vec3(lookAt - rayOrigin));
-  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-  vec3 up = cross(forward, right);
-
-  return mat3(right, up, forward);
-}
-
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
-void render (inout vec3 color, in vec2 uv) {
-  vec3 rayOrigin = vec3(0.0, 1.5, -5.0);
+vec3 render (in vec3 color, in vec2 uv) {
+  vec3 rayOrigin = mouseMove(POSITION);
   mat3 camera = getCamera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
@@ -146,15 +74,15 @@ void render (inout vec3 color, in vec2 uv) {
     // Sky background color:
     color += BACKGROUND - max(0.9 * rayDirection.y, 0.0);
   }
+
+  return color;
 }
 
 void main (void) {
-  vec3 color = vec3(0.0);
-
   // Normalize coords to be at the center of the screen:
   vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / resolution.y;
 
-  render(color, uv);
+  vec3 color = render(vec3(0.0), uv);
 
   color = pow(color, vec3(GAMMA));
 

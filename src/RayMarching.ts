@@ -1,12 +1,27 @@
-// https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
-
 import VERTEX_SHADER from '@/glsl/main.vert';
 import FRAGMENT_SHADER from '@/glsl/main.frag';
 
+const clamp = (value: number, min = 0, max = 1): number =>
+  Math.max(min, Math.min(value, max));
+
+const VERTICAL_OFFSET = 5.0;
+
 export default class RayMarching
 {
+  private pressed = false;
+  private mousePosition = [0.0, 0.0];
+
   private readonly gl: WebGL2RenderingContext;
+  private mouse: WebGLUniformLocation | null = null;
   private resolution: WebGLUniformLocation | null = null;
+
+  private offsetBottom = window.innerHeight / VERTICAL_OFFSET;
+  private offsetTop = -(window.innerHeight - this.offsetBottom);
+
+  private readonly onMouseDown = this.mouseDown.bind(this);
+  private readonly onMouseMove = this.mouseMove.bind(this);
+  private readonly onMouseUp = this.mouseUp.bind(this);
+  private readonly onResize = this.resize.bind(this);
 
   public constructor (scene: HTMLCanvasElement) {
     this.gl = this.createContext(scene);
@@ -14,8 +29,9 @@ export default class RayMarching
 
     if (program) {
       this.createScene(program);
+      this.addEventListeners();
+
       requestAnimationFrame(this.render.bind(this));
-      window.addEventListener('resize', this.resize.bind(this));
     }
   }
 
@@ -75,8 +91,10 @@ export default class RayMarching
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, BUFFER);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, COORDS, this.gl.STATIC_DRAW);
 
-    program.position = this.gl.getAttribLocation(program, 'position');
+    this.mouse = this.gl.getUniformLocation(program, 'mouse');
     this.resolution = this.gl.getUniformLocation(program, 'resolution');
+
+    program.position = this.gl.getAttribLocation(program, 'position');
 
     this.gl.enableVertexAttribArray(program.position);
     this.gl.vertexAttribPointer(program.position, 2.0, this.gl.FLOAT, false, 0.0, 0.0);
@@ -104,9 +122,39 @@ export default class RayMarching
     requestAnimationFrame(this.render.bind(this));
   }
 
+  private addEventListeners (): void {
+    document.addEventListener('mousedown', this.onMouseDown, false);
+    document.addEventListener('mousemove', this.onMouseMove, false);
+    document.addEventListener('mouseup', this.onMouseUp, false);
+    window.addEventListener('resize', this.onResize, false);
+  }
+
+  private mouseDown (): void {
+    document.documentElement.requestPointerLock();
+    this.pressed = true;
+  }
+
+  private mouseMove (event: MouseEvent): void {
+    if (!this.pressed) return;
+
+    const x = this.mousePosition[0] -= event.movementX;
+    let y = this.mousePosition[1] += event.movementY;
+
+    y = clamp(y, this.offsetTop, this.offsetBottom);
+    this.gl.uniform2fv(this.mouse, [x, y]);
+  }
+
+  private mouseUp (): void {
+    document.exitPointerLock();
+    this.pressed = false;
+  }
+
   private resize (): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
+
+    this.offsetBottom = height / VERTICAL_OFFSET;
+    this.offsetTop = -(height - this.offsetBottom);
 
     this.gl.viewport(0.0, 0.0, width, height);
     this.gl.uniform2fv(this.resolution, [width, height]);
