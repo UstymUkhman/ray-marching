@@ -1,15 +1,17 @@
-#include "primitives.glsl";
-
 // Delta time:
 uniform float time;
 
-float sphereDisplacement (in vec3 position) {
-  // From "mouse.glsl":
-  rotatePosition(position.yz, sin(time * 2.0));
+#include "primitives.glsl";
 
-  return sin(position.x + time * 4.0) *
-         sin(position.y + sin(time * 2.0)) *
-         sin(position.z + time * 8.0);
+float sphereDisplacement (in vec3 position) {
+  float timeSin = sin(time);
+
+  // From "mouse.glsl":
+  rotatePosition(position.yz, timeSin);
+
+  return sin(position.x + time * 2.0) *
+         sin(position.y + timeSin   ) *
+         sin(position.z + time * 4.0);
 }
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {

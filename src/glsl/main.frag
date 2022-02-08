@@ -16,13 +16,10 @@ uniform vec2 resolution;
 #include "mouse.glsl";
 #include "normal.glsl";
 #include "lighting.glsl";
+#include "sphereColor.glsl";
 
 // Output color:
 out vec4 fragColor;
-
-vec3 getColorByID (in int id) {
-  return COLORS[id];
-}
 
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
@@ -57,9 +54,7 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
-    else {
-      objectColor = getColorByID(objectID);
-    }
+    else getSphereColor(objectColor, time, true);
 
     // Define object color and lighting when hitted:
     color += getLight(position, rayDirection, objectColor);

@@ -1,5 +1,5 @@
 // Macros:
-#define PI          3.141592653589793
+#define PI          3.14159265358979323846
 #define RAD         PI * 0.5
 #define TAU         PI * 2.0
 
@@ -41,10 +41,3 @@ const vec3  LIGHT        = vec3(20.0, 40.0, -30.0); // Light color
 // Fog:
 const vec3  FOG_COLOR    = vec3(0.5);               // Fog color
 const float FOG_DENSITY  = 0.00025;                 // Fog density
-
-// Object colors:
-const vec3 COLORS[2] = vec3[2]
-(
-  vec3(0.0),                    // Plane
-  vec3(0.54, 0.02745, 0.02745)  // Sphere
-);
