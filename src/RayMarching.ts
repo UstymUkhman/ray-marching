@@ -5,10 +5,14 @@ const clamp = (value: number, min = 0, max = 1): number =>
   Math.max(min, Math.min(value, max));
 
 const VERTICAL_OFFSET = 5.0;
+const SENSITIVITY     = 7.5;
 
 export default class RayMarching
 {
   private pressed = false;
+  private touchOffset = 0.0;
+  private touchPosition = 0.0;
+
   private mousePosition = [0.0, 0.0];
   private readonly gl: WebGL2RenderingContext;
 
@@ -18,10 +22,16 @@ export default class RayMarching
 
   private offsetBottom = window.innerHeight / VERTICAL_OFFSET;
   private offsetTop = -(window.innerHeight - this.offsetBottom);
+  private touchSensitivity = window.innerWidth / SENSITIVITY | 0;
+
+  private readonly onTouchStart = this.touchStart.bind(this);
+  private readonly onTouchMove = this.touchMove.bind(this);
+  private readonly onTouchEnd = this.touchEnd.bind(this);
 
   private readonly onMouseDown = this.mouseDown.bind(this);
   private readonly onMouseMove = this.mouseMove.bind(this);
   private readonly onMouseUp = this.mouseUp.bind(this);
+
   private readonly onResize = this.resize.bind(this);
 
   public constructor (scene: HTMLCanvasElement) {
@@ -127,10 +137,37 @@ export default class RayMarching
   }
 
   private addEventListeners (): void {
+    document.addEventListener('touchstart', this.onTouchStart, false);
+    document.addEventListener('touchmove', this.onTouchMove, false);
+    document.addEventListener('touchend', this.onTouchEnd, false);
+
     document.addEventListener('mousedown', this.onMouseDown, false);
     document.addEventListener('mousemove', this.onMouseMove, false);
     document.addEventListener('mouseup', this.onMouseUp, false);
+
     window.addEventListener('resize', this.onResize, false);
+  }
+
+  private touchStart (event: TouchEvent): void {
+    const { clientX } = event.touches[0];
+    this.touchPosition = clientX;
+    this.pressed = true;
+  }
+
+  private touchMove (event: TouchEvent): void {
+    if (!this.pressed) return;
+
+    const { clientX } = event.changedTouches[0];
+    let x = this.touchPosition - clientX;
+
+    x  = this.touchOffset += x;
+    x /= this.touchSensitivity;
+
+    this.gl.uniform2fv(this.mouse, [x, 0.0]);
+  }
+
+  private touchEnd (): void {
+    this.pressed = false;
   }
 
   private mouseDown (): void {
@@ -159,6 +196,7 @@ export default class RayMarching
 
     this.offsetBottom = height / VERTICAL_OFFSET;
     this.offsetTop = -(height - this.offsetBottom);
+    this.touchSensitivity = width / SENSITIVITY | 0;
 
     this.gl.viewport(0.0, 0.0, width, height);
     this.gl.uniform2fv(this.resolution, [width, height]);

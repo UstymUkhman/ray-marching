@@ -73,13 +73,30 @@ vec3 render (in vec3 color, in vec2 uv) {
   return color;
 }
 
-void main (void) {
+vec2 getUV (in vec2 offset) {
+  // Get UV with rotated grid offset:
+  vec2 uv = gl_FragCoord.xy + offset;
   // Normalize coords to be at the center of the screen:
-  vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / resolution.y;
+  return (uv * 2.0 - resolution.xy) / resolution.y;
+}
 
-  vec3 color = render(vec3(0.0), uv);
+// [Anti-Aliasing] (RGSS)
+vec3 renderAAx4 (out vec3 color) {
+  // Sampling grid rotation:
+  vec4 rotation = vec4(0.125, -0.125, 0.375, -0.375);
+
+  color = render(color, getUV(rotation.xz)) +
+          render(color, getUV(rotation.yw)) +
+          render(color, getUV(rotation.wx)) +
+          render(color, getUV(rotation.zy));
+
+  return color / 4.0;
+}
+
+void main (void) {
+  vec3 color = vec3(0.0);
+  color = renderAAx4(color);
 
   color = pow(color, vec3(GAMMA));
-
   fragColor = vec4(color, 1.0);
 }

@@ -7,8 +7,8 @@ body {
   -webkit-overflow-scrolling: touch;
   -webkit-touch-callout: none;
 
+  font-family: 'Roboto Mono', sans-serif;
   text-rendering: optimizeLegibility;
-  font-family: 'Inter', sans-serif;
   font-variant-ligatures: none;
   backface-visibility: hidden;
   background-color: #222;
@@ -41,14 +41,20 @@ body {
 }
 
 #root {
+  position: relative;
   display: block;
+
   height: 100%;
   width: 100%;
-  z-index: 0;
+
+  padding: 0;
+  margin: 0;
 }
 
 canvas {
   display: block;
+  cursor: grab;
+
   height: 100%;
   width: 100%;
 
@@ -92,11 +98,10 @@ canvas {
 
 .disabled-js .disabled-js-copy strong,
 .not-supported .not-supported-copy strong {
-  font-family: 'Roboto Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: 5px;
-
   margin-bottom: 30px;
+
+  letter-spacing: 5px;
   line-height: 25px;
   font-size: 20px;
   display: block;
@@ -123,7 +128,6 @@ canvas {
 }
 
 .not-supported .not-supported-copy span a:hover {
-  letter-spacing: 2.5px;
   font-weight: bold;
 }
 
@@ -177,10 +181,6 @@ canvas {
 
   .not-supported .not-supported-copy span a {
     letter-spacing: 1px;
-  }
-
-  .not-supported .not-supported-copy span a:hover {
-    letter-spacing: 0.55px;
   }
 }
 
