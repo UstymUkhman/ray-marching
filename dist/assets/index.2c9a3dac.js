@@ -6,7 +6,7 @@ in vec2 position;
 
 void main (void) {
   gl_Position = vec4(position, 1.0, 1.0);
-}`,d=`#version 300 es
+}`,f=`#version 300 es
 
 #ifndef GL_FRAGMENT_PRECISION_HIGH
   precision mediump float;
@@ -40,6 +40,8 @@ vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool sim
     return xor * vec3(0.25) + 0.25;
   }
 }
+#define USE_SOFT_SHADOWS
+
 #define PI          3.14159265358979323846
 #define RAD         PI * 0.5
 #define TAU         PI * 2.0
@@ -55,34 +57,102 @@ struct ID
 
 struct Ray
 {
-  int steps;      
-  float distance; 
-  float epsilon;  
+  int   steps;
+  float distance;
+  float epsilon;
 };
 
-const float FOV          = 2.5;                     
-const float GAMMA        = 1.0 / 2.2;               
-const vec3  LOOK_AT      = vec3(0.0);               
-const vec3  POSITION     = vec3(0.0, -5.0, -15.0);  
+struct Light
+{
+  vec3  position;
+  float distance;
+  float size;
+  float min;
+  float max;
+};
 
-const ID  IDs            = ID(1, 2);                
-const Ray RAY            = Ray(256, 500.0, 0.001);  
+const float FOV         = 2.5;                    
+const float GAMMA       = 1.0 / 2.2;              
+const vec3  LOOK_AT     = vec3(0.0);              
+const vec3  POSITION    = vec3(0.0, -5.0, -15.0); 
 
-const float AMBIENT      = 0.05;                    
-const float FRESNEL      = 0.25;                    
+const float AMBIENT     = 0.05;                   
+const float FRESNEL     = 0.25;                   
 
-const vec3  SPECULAR     = vec3(0.5);               
-const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);     
-const vec3  LIGHT        = vec3(20.0, 40.0, -30.0); 
+const vec3  SPECULAR    = vec3(0.5);              
+const vec3  BACKGROUND  = vec3(0.5, 0.8, 0.9);    
 
-const vec3  FOG_COLOR    = vec3(0.5);               
-const float FOG_DENSITY  = 0.00025;
+const vec3  FOG_COLOR   = vec3(0.5);              
+const float FOG_DENSITY = 0.00025;                
+
+const Light LIGHT = Light(
+  vec3(20.0, 40.0, -30.0), 
+  0.01,                    
+  0.03,                    
+  0.0001,                  
+  60.0                     
+);
+
+const Ray RAY = Ray(
+  256,   
+  500.0, 
+  0.001  
+);
+
+const ID IDs = ID(
+  1, 
+  2  
+);
 mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
   vec3 forward = normalize(vec3(lookAt - rayOrigin));
   vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
   vec3 up = cross(forward, right);
 
   return mat3(right, up, forward);
+}
+const float SPEED = 100.0;
+const float MIN   = float(0xFF);
+const float MAX   = float(0xFF * 3);
+const float HALF  = float(0xFF << 1);
+
+void sphereColor (out vec3 color, in float time, in bool circular) {
+  float divisor = circular ? MAX : HALF;
+  float timeMod = mod(time * SPEED, divisor);
+
+  if (circular) {
+    float red   = MAX - timeMod - HALF;
+    float green = clamp(timeMod, 0.0, HALF);
+    float blue  = clamp(timeMod, MIN, MAX);
+
+    red = max(
+      max(red, 0.0),
+      -min(red + MIN, 0.0)
+    );
+
+    red   = red / MIN * 0.5;
+    green = green / MIN * 0.5;
+    blue  = (blue - MIN) / MIN * 0.5;
+
+    red   = floor(sin(PI * red)   * MIN);
+    green = floor(sin(PI * green) * MIN);
+    blue  = floor(sin(PI * blue)  * MIN);
+
+    color = vec3(red, green, blue);
+  }
+
+  else {
+    int delta = int(sin(PI * timeMod / HALF) * HALF);
+    int blue  = max(delta - 0xFF, 0);
+    int red   = min(delta, 0xFF);
+
+    color = vec3(
+      0xFF - red,
+      red - blue,
+      blue
+    );
+  }
+
+  color = normalize(color);
 }
 
 uniform vec2 mouse;
@@ -190,11 +260,11 @@ vec3 getSurfaceNormal (in vec3 position, in int complexity) {
 
   return normalize(normal);
 }
-vec2 raycast (in vec3 origin, in vec3 direction) {
+vec2 raycast (in vec3 position, in vec3 direction) {
   vec2 distance, object;
 
   for (int i = 0; i < RAY.steps; i++) {
-    vec3 ray = origin + object.x * direction;
+    vec3 ray = position + object.x * direction;
 
     distance = mapScene(ray);
 
@@ -213,8 +283,37 @@ vec2 raycast (in vec3 origin, in vec3 direction) {
   return object;
 }
 
+float softShadow (in vec3 position, in vec3 direction) {
+  float result = 1.0;
+  float lightDistance = LIGHT.distance;
+
+  for (int i = 0; i < RAY.steps; i++) {
+    vec3 ray = position + lightDistance * direction;
+
+    
+    float distance = mapScene(ray).x;
+    float scaledDistance = lightDistance * LIGHT.size;
+
+    
+    
+    
+    result = min(result, distance / scaledDistance);
+    lightDistance += distance;
+
+    
+    bool far = lightDistance > LIGHT.max;
+
+    
+    bool close = distance < LIGHT.min;
+
+    if (close || far) break;
+  }
+
+  return clamp(result, 0.0, 1.0);
+}
+
 vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
-  vec3 lightDirection = normalize(LIGHT - position);
+  vec3 lightDirection = normalize(LIGHT.position - position);
   vec3 surfaceNormal = getSurfaceNormal(position, 1);
 
   
@@ -229,11 +328,12 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
   reflected = dot(lightDirection, surfaceNormal);
   vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
+  vec3 specularDiffuse = specular + diffuse;
 
   
   
   
-  float lightDistance = length(LIGHT - position);
+  float lightDistance = length(LIGHT.position - position);
 
   
   float fresnelAmount = dot(direction, surfaceNormal) + 1.0;
@@ -242,63 +342,23 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   
   vec3 ambient = color * AMBIENT;
 
-  float objectDistance = raycast(
-    position + surfaceNormal * 0.02,
-    normalize(LIGHT)
-  ).x;
+  vec3 origin = position + surfaceNormal * 0.02;
+  vec3 lightPosition = normalize(LIGHT.position);
+
+  #ifdef USE_SOFT_SHADOWS
+    specularDiffuse *= softShadow(origin, lightPosition);
+  #else
+    float objectDistance = raycast(origin, lightPosition).x;
+
+    
+    
+    if (objectDistance < lightDistance) {
+      return ambient + fresnel;
+    }
+  #endif
 
   
-  
-  if (objectDistance < lightDistance) {
-    return ambient + fresnel;
-  }
-
-  
-  return ambient + fresnel + diffuse + specular;
-}
-const float SPEED = 100.0;
-const float MIN   = float(0xFF);
-const float HALF  = float(0xFF << 1);
-const float MAX   = float(0xFF * 3);
-
-void getSphereColor (out vec3 color, in float time, in bool circular) {
-  float divisor = circular ? MAX : HALF;
-  float timeMod = mod(time * SPEED, divisor);
-
-  if (circular) {
-    float red   = MAX - timeMod - HALF;
-    float green = clamp(timeMod, 0.0, HALF);
-    float blue  = clamp(timeMod, MIN, MAX);
-
-    red = max(
-      max(red, 0.0),
-      -min(red + MIN, 0.0)
-    );
-
-    red   = red / MIN * 0.5;
-    green = green / MIN * 0.5;
-    blue  = (blue - MIN) / MIN * 0.5;
-
-    red   = floor(sin(PI * red)   * MIN);
-    green = floor(sin(PI * green) * MIN);
-    blue  = floor(sin(PI * blue)  * MIN);
-
-    color = vec3(red, green, blue);
-  }
-
-  else {
-    int delta = int(sin(PI * timeMod / HALF) * HALF);
-    int blue  = max(delta - 0xFF, 0);
-    int red   = min(delta, 0xFF);
-
-    color = vec3(
-      0xFF - red,
-      red - blue,
-      blue
-    );
-  }
-
-  color = normalize(color);
+  return ambient + fresnel + specularDiffuse;
 }
 
 out vec4 fragColor;
@@ -334,7 +394,7 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
-    else getSphereColor(objectColor, time, true);
+    else sphereColor(objectColor, time, true);
 
     
     color += getLight(position, rayDirection, objectColor);
@@ -378,4 +438,4 @@ void main (void) {
 
   color = pow(color, vec3(GAMMA));
   fragColor = vec4(color, 1.0);
-}`;const f=(r,n=0,e=1)=>Math.max(n,Math.min(r,e)),c=5,a=7.5;class u{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(h,this.gl.VERTEX_SHADER),t=this.loadShader(d,this.gl.FRAGMENT_SHADER);return e&&t&&(this.gl.attachShader(n,e),this.gl.attachShader(n,t),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),t=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,t,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const t=this.gl.createShader(e);return this.gl.shaderSource(t,n),this.gl.compileShader(t),this.gl.getShaderParameter(t,this.gl.COMPILE_STATUS)?t:(console.error(this.gl.getShaderInfoLog(t)),this.gl.deleteShader(t))}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let t=this.touchPosition-e;t=this.touchOffset+=t,t/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[t,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let t=this.mousePosition[1]+=n.movementY;t=f(t,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,t])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new u(document.getElementById("scene"));
+}`;const d=(r,n=0,e=1)=>Math.max(n,Math.min(r,e)),c=5,a=7.5;class u{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(h,this.gl.VERTEX_SHADER),t=this.loadShader(f,this.gl.FRAGMENT_SHADER);return e&&t&&(this.gl.attachShader(n,e),this.gl.attachShader(n,t),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),t=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,t,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const t=this.gl.createShader(e);return this.gl.shaderSource(t,n),this.gl.compileShader(t),this.gl.getShaderParameter(t,this.gl.COMPILE_STATUS)?t:(console.error(this.gl.getShaderInfoLog(t)),this.gl.deleteShader(t))}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let t=this.touchPosition-e;t=this.touchOffset+=t,t/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[t,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let t=this.mousePosition[1]+=n.movementY;t=d(t,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,t])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new u(document.getElementById("scene"));

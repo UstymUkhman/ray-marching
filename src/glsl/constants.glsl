@@ -1,4 +1,6 @@
 // Macros:
+#define USE_SOFT_SHADOWS
+
 #define PI          3.14159265358979323846
 #define RAD         PI * 0.5
 #define TAU         PI * 2.0
@@ -15,29 +17,53 @@ struct ID
 
 struct Ray
 {
-  int steps;      // Max ray steps
-  float distance; // Max ray distance
-  float epsilon;  // Precision to surface
+  int   steps;
+  float distance;
+  float epsilon;
+};
+
+struct Light
+{
+  vec3  position;
+  float distance;
+  float size;
+  float min;
+  float max;
 };
 
 // Scene & Camera:
-const float FOV          = 2.5;                     // Field of View
-const float GAMMA        = 1.0 / 2.2;               // Gamma Correction
-const vec3  LOOK_AT      = vec3(0.0);               // Camera orientation
-const vec3  POSITION     = vec3(0.0, -5.0, -15.0);  // Ray origin initial position
-
-const ID  IDs            = ID(1, 2);                // Object IDs
-const Ray RAY            = Ray(256, 500.0, 0.001);  // Raycast configs
+const float FOV         = 2.5;                    // Field of View
+const float GAMMA       = 1.0 / 2.2;              // Gamma Correction
+const vec3  LOOK_AT     = vec3(0.0);              // Camera orientation
+const vec3  POSITION    = vec3(0.0, -5.0, -15.0); // Ray origin initial position
 
 // Lighting:
-const float AMBIENT      = 0.05;                    // Ambient factor
-const float FRESNEL      = 0.25;                    // Fresnel factor
+const float AMBIENT     = 0.05;                   // Ambient factor
+const float FRESNEL     = 0.25;                   // Fresnel factor
 
 // Colors:
-const vec3  SPECULAR     = vec3(0.5);               // Specular color
-const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);     // Skybox color
-const vec3  LIGHT        = vec3(20.0, 40.0, -30.0); // Light color
+const vec3  SPECULAR    = vec3(0.5);              // Specular color
+const vec3  BACKGROUND  = vec3(0.5, 0.8, 0.9);    // Skybox color
 
 // Fog:
-const vec3  FOG_COLOR    = vec3(0.5);               // Fog color
-const float FOG_DENSITY  = 0.00025;                 // Fog density
+const vec3  FOG_COLOR   = vec3(0.5);              // Fog color
+const float FOG_DENSITY = 0.00025;                // Fog density
+
+const Light LIGHT = Light(
+  vec3(20.0, 40.0, -30.0), // Position
+  0.01,                    // Initial distance
+  0.03,                    // Size
+  0.0001,                  // Min light distance
+  60.0                     // Max light distance
+);
+
+const Ray RAY = Ray(
+  256,   // Max ray steps
+  500.0, // Max ray distance
+  0.001  // Precision to surface
+);
+
+const ID IDs = ID(
+  1, // Plane
+  2  // Sphere
+);

@@ -12,11 +12,11 @@ uniform vec2 resolution;
 #include "checkerfiltering.glsl";
 #include "constants.glsl";
 #include "camera.glsl";
+#include "color.glsl";
 
 #include "mouse.glsl";
 #include "normal.glsl";
-#include "lighting.glsl";
-#include "sphereColor.glsl";
+#include "shading.glsl";
 
 // Output color:
 out vec4 fragColor;
@@ -54,7 +54,7 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
-    else getSphereColor(objectColor, time, true);
+    else sphereColor(objectColor, time, true);
 
     // Define object color and lighting when hitted:
     color += getLight(position, rayDirection, objectColor);

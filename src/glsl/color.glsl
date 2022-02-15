@@ -1,9 +1,9 @@
 const float SPEED = 100.0;
 const float MIN   = float(0xFF);
-const float HALF  = float(0xFF << 1);
 const float MAX   = float(0xFF * 3);
+const float HALF  = float(0xFF << 1);
 
-void getSphereColor (out vec3 color, in float time, in bool circular) {
+void sphereColor (out vec3 color, in float time, in bool circular) {
   float divisor = circular ? MAX : HALF;
   float timeMod = mod(time * SPEED, divisor);
 
