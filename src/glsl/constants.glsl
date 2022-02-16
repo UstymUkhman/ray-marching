@@ -1,4 +1,5 @@
 // Macros:
+#define ANTI_ALIASING 4
 #define USE_SOFT_SHADOWS
 
 #define PI          3.14159265358979323846

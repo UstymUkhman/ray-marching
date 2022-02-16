@@ -1,3 +1,4 @@
+#include "normal.glsl";
 #include "raycast.glsl";
 
 // RayMarching loop with "Soft Shadows" factor:
