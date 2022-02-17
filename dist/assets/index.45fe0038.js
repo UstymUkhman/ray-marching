@@ -18,6 +18,7 @@ uniform vec2 resolution;
 
 #define ANTI_ALIASING 4
 #define USE_SOFT_SHADOWS
+#define AMBIENT_OCCLUSSION
 
 #define PI          3.14159265358979323846
 #define RAD         PI * 0.5
@@ -48,19 +49,23 @@ struct Light
   float max;
 };
 
-const float FOV         = 2.5;                    
-const float GAMMA       = 1.0 / 2.2;              
-const vec3  LOOK_AT     = vec3(0.0);              
-const vec3  POSITION    = vec3(0.0, -5.0, -15.0); 
+const float FOV          = 2.5;                    
+const float GAMMA        = 1.0 / 2.2;              
+const vec3  LOOK_AT      = vec3(0.0);              
+const vec3  POSITION     = vec3(0.0, -5.0, -15.0); 
 
-const float AMBIENT     = 0.05;                   
-const float FRESNEL     = 0.25;                   
+const float AMBIENT      = 0.05;                   
+const float FRESNEL      = 0.25;                   
 
-const vec3  SPECULAR    = vec3(0.5);              
-const vec3  BACKGROUND  = vec3(0.5, 0.8, 0.9);    
+const vec3  SPECULAR     = vec3(0.5);              
+const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);    
 
-const vec3  FOG_COLOR   = vec3(0.5);              
-const float FOG_DENSITY = 0.00025;                
+const vec3  FOG_COLOR    = vec3(0.5);              
+const float FOG_DENSITY  = 0.00025;                
+
+const int   AO_STEPS     = 8;                      
+const float AO_FACTOR    = 0.85;                   
+const float AO_INTENSITY = 0.75;                   
 
 const Light LIGHT = Light(
   vec3(20.0, 40.0, -30.0), 
@@ -190,7 +195,7 @@ float sphereDisplacement (in vec3 position) {
 
   return sin(position.x + time * 2.0) *
          sin(position.y + timeSin   ) *
-         sin(position.z + time * 4.0);
+         sin(position.z + time * 4.0) / 2.5;
 }
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {
@@ -282,6 +287,30 @@ vec2 raycast (in vec3 position, in vec3 direction) {
 
   return object;
 }
+float ambientOcclussion (in vec3 position, in vec3 normal) {
+  float weight = 1.0;
+  float amount = 0.0;
+
+  for (int s = 0; s < AO_STEPS; s++) {
+    
+    float length = 0.01 + 0.02 * pow(float(s), 2.0);
+
+    
+    
+    float distance = mapScene(position + normal * length).x;
+
+    
+    
+    amount += (length - distance) * weight;
+
+    
+    
+    weight *= AO_FACTOR;
+  }
+
+  
+  return 1.0 - clamp(AO_INTENSITY * amount, 0.0, 1.0);
+}
 
 float softShadow (in vec3 position, in vec3 direction) {
   float result = 1.0;
@@ -328,7 +357,6 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
   reflected = dot(lightDirection, surfaceNormal);
   vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
-  vec3 specularDiffuse = specular + diffuse;
 
   
   
@@ -341,9 +369,21 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
   
   vec3 ambient = color * AMBIENT;
+  vec3 ambientFresnel = ambient + fresnel;
 
   vec3 origin = position + surfaceNormal * 0.02;
   vec3 lightPosition = normalize(LIGHT.position);
+
+  #ifdef AMBIENT_OCCLUSSION
+    float occlussion = ambientOcclussion(position, surfaceNormal);
+
+    
+    
+    ambientFresnel *= occlussion;
+    specular *= occlussion;
+  #endif
+
+  vec3 specularDiffuse = specular + diffuse;
 
   #ifdef USE_SOFT_SHADOWS
     specularDiffuse *= softShadow(origin, lightPosition);
@@ -353,12 +393,12 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
     
     
     if (objectDistance < lightDistance) {
-      return ambient + fresnel;
+      return ambientFresnel;
     }
   #endif
 
   
-  return ambient + fresnel + specularDiffuse;
+  return ambientFresnel + specularDiffuse;
 }
 
 vec3 render (in vec3 color, in vec2 uv) {

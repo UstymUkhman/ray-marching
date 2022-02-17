@@ -11,7 +11,7 @@ float sphereDisplacement (in vec3 position) {
 
   return sin(position.x + time * 2.0) *
          sin(position.y + timeSin   ) *
-         sin(position.z + time * 4.0);
+         sin(position.z + time * 4.0) / 2.5;
 }
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {

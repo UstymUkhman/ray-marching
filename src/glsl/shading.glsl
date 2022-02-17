@@ -1,5 +1,6 @@
 #include "normal.glsl";
 #include "raycast.glsl";
+#include "occlussion.glsl";
 
 // RayMarching loop with "Soft Shadows" factor:
 float softShadow (in vec3 position, in vec3 direction) {
@@ -49,7 +50,6 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
   reflected = dot(lightDirection, surfaceNormal);
   vec3 diffuse = color * clamp(reflected, 0.0, 1.0);
-  vec3 specularDiffuse = specular + diffuse;
 
   // Get shadows by comparing distance from current
   // position to the closest object with distance
@@ -62,9 +62,21 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
   // Ambient color:
   vec3 ambient = color * AMBIENT;
+  vec3 ambientFresnel = ambient + fresnel;
 
   vec3 origin = position + surfaceNormal * 0.02;
   vec3 lightPosition = normalize(LIGHT.position);
+
+  #ifdef AMBIENT_OCCLUSSION
+    float occlussion = ambientOcclussion(position, surfaceNormal);
+
+    // Ambient Occlussion debug mode:
+    // return 0.9 * vec3(1.0) * occlussion;
+    ambientFresnel *= occlussion;
+    specular *= occlussion;
+  #endif
+
+  vec3 specularDiffuse = specular + diffuse;
 
   #ifdef USE_SOFT_SHADOWS
     specularDiffuse *= softShadow(origin, lightPosition);
@@ -74,10 +86,10 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
     // Distance to object is smaller than distance
     // to the light source, this point is in shadow:
     if (objectDistance < lightDistance) {
-      return ambient + fresnel;
+      return ambientFresnel;
     }
   #endif
 
   // Light components sum:
-  return ambient + fresnel + specularDiffuse;
+  return ambientFresnel + specularDiffuse;
 }
