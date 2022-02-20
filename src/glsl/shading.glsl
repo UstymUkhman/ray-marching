@@ -34,9 +34,9 @@ float softShadow (in vec3 position, in vec3 direction) {
 
 // [Lambertian Shading Model]
 // REFLECTED_LIGHT = dot(LIGHT_DIRECTION, SURFACE_NORMAL):
-vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
+vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color) {
   vec3 lightDirection = normalize(LIGHT.position - position);
-  vec3 surfaceNormal = getSurfaceNormal(position, 1);
+  vec3 surfaceNormal = SurfaceNormal(position, 1);
 
   // [Phong Shading Model]
   vec3 inverseDirection = -direction;
@@ -60,9 +60,13 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   float fresnelAmount = dot(direction, surfaceNormal) + 1.0;
   vec3 fresnel = pow(fresnelAmount, 3.0) * color * FRESNEL;
 
+  // Calculate reflected light from objects:
+  reflected = dot(surfaceNormal, -lightDirection);
+  reflection = color * REFLECTION * clamp(reflected, 0.0, 1.0);
+
   // Ambient color:
   vec3 ambient = color * AMBIENT;
-  vec3 ambientFresnel = ambient + fresnel;
+  vec3 ambientFresnel = ambient + fresnel + reflection;
 
   vec3 origin = position + surfaceNormal * 0.02;
   vec3 lightPosition = normalize(LIGHT.position);

@@ -1,6 +1,6 @@
 // https://iquilezles.org/www/articles/checkerfiltering/checkerfiltering.htm
 
-vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple) {
+vec3 GroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple) {
   if (simple) {
     return vec3(0.3 + 0.2 * mod(
       floor(position.x) +

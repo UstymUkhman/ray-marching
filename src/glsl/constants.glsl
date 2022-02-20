@@ -11,21 +11,18 @@
 #define saturate(x) clamp(x, 0.0, 1.0)
 
 // Configs:
-struct ID
-{
+struct ID {
   int plane;
   int sphere;
 };
 
-struct Ray
-{
+struct Ray {
   int   steps;
   float distance;
   float epsilon;
 };
 
-struct Light
-{
+struct Light {
   vec3  position;
   float distance;
   float size;
@@ -42,6 +39,7 @@ const vec3  POSITION     = vec3(0.0, -5.0, -15.0); // Ray origin initial positio
 // Lighting:
 const float AMBIENT      = 0.05;                   // Ambient factor
 const float FRESNEL      = 0.25;                   // Fresnel factor
+const float REFLECTION   = 0.05;                   // Reflection amout
 
 // Colors:
 const vec3  SPECULAR     = vec3(0.5);              // Specular color

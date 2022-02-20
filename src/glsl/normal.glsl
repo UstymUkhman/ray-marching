@@ -1,6 +1,6 @@
 #include "map.glsl";
 
-vec3 getSurfaceNormal (in vec3 position, in int complexity) {
+vec3 SurfaceNormal (in vec3 position, in int complexity) {
   vec3 normal = vec3(0.0);
 
   if (complexity == 1) {

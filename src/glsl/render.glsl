@@ -8,7 +8,7 @@
 // each pixel and render elements on scene:
 vec3 render (in vec3 color, in vec2 uv) {
   vec3 rayOrigin = mouseMove(POSITION);
-  mat3 camera = getCamera(rayOrigin, LOOK_AT);
+  mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
   // Get raymarching distance result:
@@ -34,13 +34,13 @@ vec3 render (in vec3 color, in vec2 uv) {
       vec3 dpdx = (rayDirection / rayDirection.y - rayDirectionX / rayDirectionX.y) * rayOrigin.y;
       vec3 dpdy = (rayDirection / rayDirection.y - rayDirectionY / rayDirectionY.y) * rayOrigin.y;
 
-      objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
+      objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
     else sphereColor(objectColor, time, true);
 
     // Define object color and lighting when hitted:
-    color += getLight(position, rayDirection, objectColor);
+    color += Lighting(position, rayDirection, objectColor);
 
     // Exponential squared fog:
     float fogDepth = object.x * object.x;

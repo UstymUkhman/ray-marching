@@ -1,4 +1,4 @@
-const l=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const s of i.addedNodes)s.tagName==="LINK"&&s.rel==="modulepreload"&&o(s)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};l();var d=`#version 300 es
+const a=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const s of i.addedNodes)s.tagName==="LINK"&&s.rel==="modulepreload"&&o(s)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};a();var d=`#version 300 es
 
 precision mediump float;
 
@@ -27,21 +27,18 @@ uniform vec2 resolution;
 #define PHI         sqrt(5.0) * 0.5 + 0.5
 #define saturate(x) clamp(x, 0.0, 1.0)
 
-struct ID
-{
+struct ID {
   int plane;
   int sphere;
 };
 
-struct Ray
-{
+struct Ray {
   int   steps;
   float distance;
   float epsilon;
 };
 
-struct Light
-{
+struct Light {
   vec3  position;
   float distance;
   float size;
@@ -56,6 +53,7 @@ const vec3  POSITION     = vec3(0.0, -5.0, -15.0);
 
 const float AMBIENT      = 0.05;                   
 const float FRESNEL      = 0.25;                   
+const float REFLECTION   = 0.05;                   
 
 const vec3  SPECULAR     = vec3(0.5);              
 const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);    
@@ -146,14 +144,14 @@ void sphereColor (out vec3 color, in float time, in bool circular) {
 
   color = normalize(color);
 }
-mat3 getCamera (in vec3 rayOrigin, in vec3 lookAt) {
+mat3 Camera (in vec3 rayOrigin, in vec3 lookAt) {
   vec3 forward = normalize(vec3(lookAt - rayOrigin));
   vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
   vec3 up = cross(forward, right);
 
   return mat3(right, up, forward);
 }
-vec3 getGroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple) {
+vec3 GroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple) {
   if (simple) {
     return vec3(0.3 + 0.2 * mod(
       floor(position.x) +
@@ -219,7 +217,7 @@ vec2 mapScene (in vec3 ray) {
   return mergeObjects(plane, sphere);
 }
 
-vec3 getSurfaceNormal (in vec3 position, in int complexity) {
+vec3 SurfaceNormal (in vec3 position, in int complexity) {
   vec3 normal = vec3(0.0);
 
   if (complexity == 1) {
@@ -341,9 +339,9 @@ float softShadow (in vec3 position, in vec3 direction) {
   return clamp(result, 0.0, 1.0);
 }
 
-vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
+vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color) {
   vec3 lightDirection = normalize(LIGHT.position - position);
-  vec3 surfaceNormal = getSurfaceNormal(position, 1);
+  vec3 surfaceNormal = SurfaceNormal(position, 1);
 
   
   vec3 inverseDirection = -direction;
@@ -368,8 +366,12 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
   vec3 fresnel = pow(fresnelAmount, 3.0) * color * FRESNEL;
 
   
+  reflected = dot(surfaceNormal, -lightDirection);
+  reflection = color * REFLECTION * clamp(reflected, 0.0, 1.0);
+
+  
   vec3 ambient = color * AMBIENT;
-  vec3 ambientFresnel = ambient + fresnel;
+  vec3 ambientFresnel = ambient + fresnel + reflection;
 
   vec3 origin = position + surfaceNormal * 0.02;
   vec3 lightPosition = normalize(LIGHT.position);
@@ -403,7 +405,7 @@ vec3 getLight (in vec3 position, in vec3 direction, in vec3 color) {
 
 vec3 render (in vec3 color, in vec2 uv) {
   vec3 rayOrigin = mouseMove(POSITION);
-  mat3 camera = getCamera(rayOrigin, LOOK_AT);
+  mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
   
@@ -429,13 +431,13 @@ vec3 render (in vec3 color, in vec2 uv) {
       vec3 dpdx = (rayDirection / rayDirection.y - rayDirectionX / rayDirectionX.y) * rayOrigin.y;
       vec3 dpdy = (rayDirection / rayDirection.y - rayDirectionY / rayDirectionY.y) * rayOrigin.y;
 
-      objectColor = getGroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
+      objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
     else sphereColor(objectColor, time, true);
 
     
-    color += getLight(position, rayDirection, objectColor);
+    color += Lighting(position, rayDirection, objectColor);
 
     
     float fogDepth = object.x * object.x;
@@ -451,7 +453,7 @@ vec3 render (in vec3 color, in vec2 uv) {
   return color;
 }
 
-vec2 getUV (in vec2 offset) {
+vec2 UV (in vec2 offset) {
   
   vec2 uv = gl_FragCoord.xy + offset;
   
@@ -459,7 +461,7 @@ vec2 getUV (in vec2 offset) {
 }
 
 vec3 renderAAx1 (out vec3 color) {
-  return render(color, getUV(vec2(0)));
+  return render(color, UV(vec2(0)));
 }
 
 vec3 renderAAx2 (out vec3 color) {
@@ -469,8 +471,8 @@ vec3 renderAAx2 (out vec3 color) {
   vec2 inverseRotation = vec2(0.33 * inverseCoordMod, 0.0);
   vec2 rotation = vec2(0.33 * float(coordMod), 0.66);
 
-  color = render(color, getUV(inverseRotation)) +
-          render(color, getUV(rotation));
+  color = render(color, UV(inverseRotation)) +
+          render(color, UV(rotation));
 
   return color / 2.0;
 }
@@ -483,9 +485,9 @@ vec3 renderAAx3 (out vec3 color) {
   vec2 rotation = vec2(0.66 * float(coordMod), 0.66);
   vec2 noRotation = vec2(0.33, 0.33);
 
-  color = render(color, getUV(inverseRotation)) +
-          render(color, getUV(rotation))        +
-          render(color, getUV(noRotation));
+  color = render(color, UV(inverseRotation)) +
+          render(color, UV(rotation))        +
+          render(color, UV(noRotation));
 
   return color / 3.0;
 }
@@ -494,10 +496,10 @@ vec3 renderAAx4 (out vec3 color) {
   
   vec4 rotation = vec4(0.125, -0.125, 0.375, -0.375);
 
-  color = render(color, getUV(rotation.xz)) +
-          render(color, getUV(rotation.yw)) +
-          render(color, getUV(rotation.wx)) +
-          render(color, getUV(rotation.zy));
+  color = render(color, UV(rotation.xz)) +
+          render(color, UV(rotation.yw)) +
+          render(color, UV(rotation.wx)) +
+          render(color, UV(rotation.zy));
 
   return color / 4.0;
 }
@@ -525,4 +527,4 @@ void main (void) {
 
   color = pow(color, vec3(GAMMA));
   fragColor = vec4(color, 1.0);
-}`;const h=(r,n=0,e=1)=>Math.max(n,Math.min(r,e)),c=5,a=7.5;class u{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(d,this.gl.VERTEX_SHADER),o=this.loadShader(f,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=h(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new u(document.getElementById("scene"));
+}`;const h=(r,n=0,e=1)=>Math.max(n,Math.min(r,e)),c=5,l=7.5;class u{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/l|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(d,this.gl.VERTEX_SHADER),o=this.loadShader(f,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=h(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/l|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new u(document.getElementById("scene"));
