@@ -15,6 +15,7 @@ export default class RayMarching
 
   private mousePosition = [0.0, 0.0];
   private readonly gl: WebGL2RenderingContext;
+  private readonly debugTexture = '/img/debug.png';
 
   private time: WebGLUniformLocation | null = null;
   private mouse: WebGLUniformLocation | null = null;
@@ -112,6 +113,8 @@ export default class RayMarching
     this.gl.vertexAttribPointer(program.position, 2.0, this.gl.FLOAT, false, 0.0, 0.0);
 
     this.gl.useProgram(program);
+    this.useDebugTexture(program);
+
     this.resize();
   }
 
@@ -127,6 +130,38 @@ export default class RayMarching
     }
 
     return shader;
+  }
+
+  private useDebugTexture (program: RayMarchingProgram): void {
+    const debug = this.gl.getUniformLocation(program, 'debug');
+    const texture = this.loadTexture(this.debugTexture);
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.activeTexture(this.gl.TEXTURE0);
+    this.gl.uniform1i(debug, 0.0);
+  }
+
+  private loadTexture (url: string): WebGLTexture | null {
+    const image = new Image();
+    const texture = this.gl.createTexture();
+
+    image.onload = () => {
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+      this.gl.texImage2D(
+        this.gl.TEXTURE_2D,
+        0.0,
+        this.gl.RGBA,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        image
+      );
+
+      this.gl.generateMipmap(this.gl.TEXTURE_2D);
+    };
+
+    image.src = url;
+    return texture;
   }
 
   private render (delta: number): void {

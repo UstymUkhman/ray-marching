@@ -11,18 +11,24 @@
 #define saturate(x) clamp(x, 0.0, 1.0)
 
 // Configs:
-struct ID {
+const struct ID {
+  int box;
   int plane;
   int sphere;
 };
 
-struct Ray {
+const struct Ray {
   int   steps;
   float distance;
   float epsilon;
 };
 
-struct Light {
+const struct Cube {
+  float size;
+  float scale;
+};
+
+const struct Light {
   vec3  position;
   float distance;
   float size;
@@ -62,6 +68,11 @@ const Light LIGHT = Light(
   60.0                     // Max light distance
 );
 
+const Cube CUBE = Cube(
+  2.5,      // Size
+  1.0 / 2.5 // Scale
+);
+
 const Ray RAY = Ray(
   256,   // Max ray steps
   500.0, // Max ray distance
@@ -69,6 +80,7 @@ const Ray RAY = Ray(
 );
 
 const ID IDs = ID(
+  0, // Box
   1, // Plane
   2  // Sphere
 );
