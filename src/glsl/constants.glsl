@@ -1,4 +1,5 @@
 // Macros:
+#define DEBUGGING_CUBE
 #define ANTI_ALIASING 4
 #define USE_SOFT_SHADOWS
 #define AMBIENT_OCCLUSSION

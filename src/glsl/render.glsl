@@ -3,6 +3,7 @@
 #include "camera.glsl";
 #include "checker.glsl";
 #include "shading.glsl";
+#include "texturing.glsl";
 
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
@@ -24,6 +25,7 @@ vec3 render (in vec3 color, in vec2 uv) {
     // origin, direction and hitted object's position:
     vec3 position = rayOrigin + object.x * rayDirection;
 
+    // Ground Plane:
     if (objectID == 0) {
       vec2 px = ((gl_FragCoord.xy + vec2(1.0, 0.0)) * 2.0 - resolution.xy) / resolution.y;
       vec2 py = ((gl_FragCoord.xy + vec2(0.0, 1.0)) * 2.0 - resolution.xy) / resolution.y;
@@ -37,7 +39,23 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
-    else sphereColor(objectColor, time, true);
+    else {
+      #ifdef DEBUGGING_CUBE
+        // Get normal vector for each position:
+        vec3 normal = SurfaceNormal(position, 1);
+
+        // Update normal vector rotation:
+        rotateCube(normal);
+
+        objectColor += triplanarMapping(
+          transformCube(position),
+          normal
+        );
+
+      #else
+        sphereColor(objectColor, time, true);
+      #endif
+    }
 
     // Define object color and lighting when hitted:
     color += Lighting(position, rayDirection, objectColor);

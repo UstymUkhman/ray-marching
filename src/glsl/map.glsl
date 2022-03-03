@@ -1,6 +1,10 @@
 // Delta time:
 uniform float time;
 
+#ifdef DEBUGGING_CUBE
+  #include "cube.glsl";
+#endif
+
 #include "primitives.glsl";
 
 float sphereDisplacement (in vec3 position) {
@@ -27,11 +31,25 @@ vec2 mapScene (in vec3 ray) {
   // Distance to plane with its ID:
   vec2 plane = vec2(planeDistance, IDs.plane);
 
-  // Create a sphere at the center of the screen:
-  float sphereDistance = Sphere(ray, 3.0 + sphereDisplacement(ray));
+  #ifdef DEBUGGING_CUBE
+    // Translate & rotate cube coordinates:
+    vec3 position = transformCube(vec3(ray));
 
-  // Distance to sphere with its ID:
-  vec2 sphere = vec2(sphereDistance, IDs.sphere);
+    // Create a box at the center of the screen:
+    float boxDistance = Box(position, vec3(CUBE.size));
 
-  return mergeObjects(plane, sphere);
+    // Distance to box with its ID:
+    vec2 box = vec2(boxDistance, IDs.box);
+
+    return mergeObjects(plane, box);
+
+  #else
+    // Create a sphere at the center of the screen:
+    float sphereDistance = Sphere(ray, 3.0 + sphereDisplacement(ray));
+
+    // Distance to sphere with its ID:
+    vec2 sphere = vec2(sphereDistance, IDs.sphere);
+
+    return mergeObjects(plane, sphere);
+  #endif
 }

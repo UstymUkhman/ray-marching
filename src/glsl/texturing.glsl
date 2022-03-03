@@ -2,12 +2,13 @@
 uniform sampler2D debug;
 
 // [Triplanar Texture Mapping]
-vec3 triplanarMapping (in vec3 position) {
+vec3 triplanarMapping (in vec3 position, in vec3 normal) {
   // UV vector for texture color:
   vec3 uv = position * CUBE.scale;
 
-  // Get absolute normal vector for each position:
-  vec3 normal = abs(SurfaceNormal(position, 1));
+  normal  = abs(normal);
+  // normal  = pow(normal, vec3(5.0));
+  // normal /= normal.x + normal.y + normal.z;
 
   // Multiply texture color value by the
   // normal vector corresponding to each face:
