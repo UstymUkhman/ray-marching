@@ -1,22 +1,16 @@
 // Delta time:
 uniform float time;
 
+#include "utils.glsl";
+
 #ifdef DEBUGGING_CUBE
   #include "cube.glsl";
+
+#else
+  #include "sphere.glsl";
 #endif
 
 #include "primitives.glsl";
-
-float sphereDisplacement (in vec3 position) {
-  float timeSin = sin(time);
-
-  // From "mouse.glsl":
-  rotatePosition(position.yz, timeSin);
-
-  return sin(position.x + time * 2.0) *
-         sin(position.y + timeSin   ) *
-         sin(position.z + time * 4.0) / 2.5;
-}
 
 vec2 mergeObjects (in vec2 object1, in vec2 object2) {
   // Return closest object from the camera:
@@ -44,8 +38,14 @@ vec2 mapScene (in vec3 ray) {
     return mergeObjects(plane, box);
 
   #else
+    // Translate & rotate sphere coordinates:
+    vec3 position = transformSphere(vec3(ray));
+
+    // Get sphere's current radius displacement:
+    // float radius = SPHERE.radius + Displacement(ray);
+
     // Create a sphere at the center of the screen:
-    float sphereDistance = Sphere(ray, 3.0 + sphereDisplacement(ray));
+    float sphereDistance = Sphere(position, SPHERE.radius);
 
     // Distance to sphere with its ID:
     vec2 sphere = vec2(sphereDistance, IDs.sphere);

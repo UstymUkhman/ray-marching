@@ -1,5 +1,13 @@
 #include "map.glsl";
 
+vec3 SphericalNormal (in vec3 normal) {
+  normal  = abs(normal);
+  normal  = pow(normal, vec3(5.0));
+  normal /= normal.x + normal.y + normal.z;
+
+  return normal;
+}
+
 vec3 SurfaceNormal (in vec3 position, in int complexity) {
   vec3 normal = vec3(0.0);
 

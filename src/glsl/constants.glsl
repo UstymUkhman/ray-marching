@@ -24,11 +24,6 @@ const struct Ray {
   float epsilon;
 };
 
-const struct Cube {
-  float size;
-  float scale;
-};
-
 const struct Light {
   vec3  position;
   float distance;
@@ -36,6 +31,19 @@ const struct Light {
   float min;
   float max;
 };
+
+#ifdef DEBUGGING_CUBE
+  const struct Cube {
+    float size;
+    float scale;
+  };
+
+#else
+  const struct Globe {
+    float radius;
+    float scale;
+  };
+#endif
 
 // Scene & Camera:
 const float FOV          = 2.5;                    // Field of View
@@ -61,17 +69,25 @@ const int   AO_STEPS     = 8;                      // Occlussion steps to perfor
 const float AO_FACTOR    = 0.85;                   // Occlussion factor at each step
 const float AO_INTENSITY = 0.75;                   // Average occlusion intensity
 
+#ifdef DEBUGGING_CUBE
+  const Cube CUBE = Cube(
+    2.5,      // Size
+    1.0 / 2.5 // Scale
+  );
+
+#else
+  const Globe SPHERE = Globe(
+    3.0,       // Radius
+    3.0 / 30.0 // Scale
+  );
+#endif
+
 const Light LIGHT = Light(
   vec3(20.0, 40.0, -30.0), // Position
   0.01,                    // Initial distance
   0.03,                    // Size
   0.0001,                  // Min light distance
   60.0                     // Max light distance
-);
-
-const Cube CUBE = Cube(
-  2.5,      // Size
-  1.0 / 2.5 // Scale
 );
 
 const Ray RAY = Ray(

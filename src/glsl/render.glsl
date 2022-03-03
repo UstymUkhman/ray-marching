@@ -40,10 +40,10 @@ vec3 render (in vec3 color, in vec2 uv) {
     }
 
     else {
-      #ifdef DEBUGGING_CUBE
-        // Get normal vector for each position:
-        vec3 normal = SurfaceNormal(position, 1);
+      // Get normal vector for each position:
+      vec3 normal = SurfaceNormal(position, 1);
 
+      #ifdef DEBUGGING_CUBE
         // Update normal vector rotation:
         rotateCube(normal);
 
@@ -53,7 +53,16 @@ vec3 render (in vec3 color, in vec2 uv) {
         );
 
       #else
-        sphereColor(objectColor, time, true);
+        // Update normal vector rotation:
+        rotateSphere(normal);
+
+        objectColor += triplanarMapping(
+          transformSphere(position),
+          normal
+        );
+
+        // Dynamic color updates:
+        // UpdateColor(objectColor, time, true);
       #endif
     }
 

@@ -3,7 +3,7 @@ const float MIN   = float(0xFF);
 const float MAX   = float(0xFF * 3);
 const float HALF  = float(0xFF << 1);
 
-void sphereColor (out vec3 color, in float time, in bool circular) {
+void UpdateColor (out vec3 color, in float time, in bool circular) {
   float divisor = circular ? MAX : HALF;
   float timeMod = mod(time * SPEED, divisor);
 
