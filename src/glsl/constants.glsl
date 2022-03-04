@@ -77,8 +77,8 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
 
 #else
   const Globe SPHERE = Globe(
-    3.0,       // Radius
-    3.0 / 30.0 // Scale
+    3.0,      // Radius
+    3.0 / RAD // Scale
   );
 #endif
 

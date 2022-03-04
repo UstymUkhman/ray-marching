@@ -42,10 +42,10 @@ vec2 mapScene (in vec3 ray) {
     vec3 position = transformSphere(vec3(ray));
 
     // Get sphere's current radius displacement:
-    // float radius = SPHERE.radius + Displacement(ray);
+    float radius = SPHERE.radius + Displacement(position);
 
     // Create a sphere at the center of the screen:
-    float sphereDistance = Sphere(position, SPHERE.radius);
+    float sphereDistance = Sphere(position, radius);
 
     // Distance to sphere with its ID:
     vec2 sphere = vec2(sphereDistance, IDs.sphere);
