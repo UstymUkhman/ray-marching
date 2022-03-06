@@ -11,7 +11,7 @@ float BumpMapping (in vec3 position, in float distance, in float factor) {
     // to get bump value in this point:
     amount += factor * TriplanarMapping(
       bump,
-      position,
+      position * SPHERE.scale,
       normalize(position + factor)
     ).g;
   }

@@ -76,7 +76,7 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
   const Cube CUBE = Cube(
     2.5,       // Size
     1.0 / 2.5, // Scale
-    0.2        // Bump Factor
+    0.15       // Bump Factor
   );
 
 #else
@@ -84,7 +84,7 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
     0.0,       // Distortion
     3.0,       // Radius
     3.0 / RAD, // Scale
-    0.2        // Bump Factor
+    0.12       // Bump Factor
   );
 #endif
 
