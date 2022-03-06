@@ -36,6 +36,7 @@ const struct Light {
   const struct Cube {
     float size;
     float scale;
+    float bump;
   };
 
 #else
@@ -43,6 +44,7 @@ const struct Light {
     float distortion;
     float radius;
     float scale;
+    float bump;
   };
 #endif
 
@@ -72,15 +74,17 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
 
 #ifdef DEBUGGING_CUBE
   const Cube CUBE = Cube(
-    2.5,      // Size
-    1.0 / 2.5 // Scale
+    2.5,       // Size
+    1.0 / 2.5, // Scale
+    0.2        // Bump Factor
   );
 
 #else
   const Globe SPHERE = Globe(
-    0.0,      // Distortion
-    3.0,      // Radius
-    3.0 / RAD // Scale
+    0.0,       // Distortion
+    3.0,       // Radius
+    3.0 / RAD, // Scale
+    0.2        // Bump Factor
   );
 #endif
 

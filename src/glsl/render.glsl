@@ -1,9 +1,17 @@
+#ifdef DEBUGGING_CUBE
+  uniform sampler2D debug;
+
+#else
+  uniform sampler2D green;
+#endif
+
 #include "mouse.glsl";
 #include "color.glsl";
 #include "camera.glsl";
+
 #include "checker.glsl";
+#include "texture.glsl";
 #include "shading.glsl";
-#include "texturing.glsl";
 
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
@@ -47,7 +55,8 @@ vec3 render (in vec3 color, in vec2 uv) {
         // Update normal vector rotation:
         rotateCube(normal);
 
-        objectColor += triplanarMapping(
+        objectColor += TriplanarMapping(
+          debug,
           transformCube(position),
           normal
         );
@@ -56,7 +65,8 @@ vec3 render (in vec3 color, in vec2 uv) {
         // Update normal vector rotation:
         rotateSphere(normal);
 
-        objectColor += triplanarMapping(
+        objectColor += TriplanarMapping(
+          green,
           transformSphere(position),
           normal
         );

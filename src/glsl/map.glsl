@@ -1,7 +1,7 @@
 // Delta time:
 uniform float time;
 
-#include "utils.glsl";
+#include "bump.glsl";
 
 #ifdef DEBUGGING_CUBE
   #include "cube.glsl";
@@ -32,6 +32,10 @@ vec2 mapScene (in vec3 ray) {
     // Create a box at the center of the screen:
     float boxDistance = Box(position, vec3(CUBE.size));
 
+    // Apply bump factor to box distance value:
+    // boxDistance += BumpMapping(position, boxDistance, CUBE.bump);
+    // boxDistance += CUBE.bump;
+
     // Distance to box with its ID:
     vec2 box = vec2(boxDistance, IDs.box);
 
@@ -46,6 +50,10 @@ vec2 mapScene (in vec3 ray) {
 
     // Create a sphere at the center of the screen:
     float sphereDistance = Sphere(position, radius);
+
+    // Apply bump factor to sphere distance value:
+    sphereDistance += BumpMapping(position, sphereDistance, SPHERE.bump);
+    sphereDistance += SPHERE.bump;
 
     // Distance to sphere with its ID:
     vec2 sphere = vec2(sphereDistance, IDs.sphere);
