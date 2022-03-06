@@ -1,5 +1,9 @@
 // Debug Texture:
 uniform sampler2D debug;
+// uniform sampler2D green;
+// uniform sampler2D black;
+// uniform sampler2D white;
+// uniform sampler2D bump;
 
 // [Triplanar Texture Mapping]
 vec3 triplanarMapping (in vec3 position, in vec3 normal) {

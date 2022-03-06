@@ -23,11 +23,20 @@ declare module '*.glsl' {
 	export default value;
 }
 
-type ShaderType =
-  WebGLRenderingContextBase['VERTEX_SHADER'] |
-  WebGLRenderingContextBase['FRAGMENT_SHADER'];
-
 interface RayMarchingProgram extends WebGLProgram
 {
   position: number
 }
+
+type ShaderType =
+  WebGLRenderingContextBase['VERTEX_SHADER'] |
+  WebGLRenderingContextBase['FRAGMENT_SHADER'];
+
+// "TextureIndex" type dynamic generation:
+// Array.from({ length: 32 }, (_, index) => `TEXTURE${index}`).join(' | ');
+type TextureIndex =
+  'TEXTURE0' |
+  'TEXTURE1' |
+  'TEXTURE2' |
+  'TEXTURE3' |
+  'TEXTURE4';

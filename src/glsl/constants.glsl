@@ -40,6 +40,7 @@ const struct Light {
 
 #else
   const struct Globe {
+    float distortion;
     float radius;
     float scale;
   };
@@ -77,6 +78,7 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
 
 #else
   const Globe SPHERE = Globe(
+    0.0,      // Distortion
     3.0,      // Radius
     3.0 / RAD // Scale
   );

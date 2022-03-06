@@ -15,7 +15,14 @@ export default class RayMarching
 
   private mousePosition = [0.0, 0.0];
   private readonly gl: WebGL2RenderingContext;
-  private readonly debugTexture = '/img/debug.png';
+
+  private readonly textures = new Map([
+    ['debug', '/img/textures/debug.png'],
+    ['green', '/img/textures/green.png'],
+    ['black', '/img/textures/black.png'],
+    ['white', '/img/textures/white.png'],
+    ['bump', '/img/textures/bump.png']
+  ]);
 
   private time: WebGLUniformLocation | null = null;
   private mouse: WebGLUniformLocation | null = null;
@@ -113,8 +120,7 @@ export default class RayMarching
     this.gl.vertexAttribPointer(program.position, 2.0, this.gl.FLOAT, false, 0.0, 0.0);
 
     this.gl.useProgram(program);
-    this.useDebugTexture(program);
-
+    this.loadTextures(program);
     this.resize();
   }
 
@@ -132,13 +138,16 @@ export default class RayMarching
     return shader;
   }
 
-  private useDebugTexture (program: RayMarchingProgram): void {
-    const debug = this.gl.getUniformLocation(program, 'debug');
-    const texture = this.loadTexture(this.debugTexture);
+  private loadTextures (program: RayMarchingProgram, index = -1): void {
+    this.textures.forEach((url, name) => {
+      const activeTexture = this.gl[`TEXTURE${++index}` as TextureIndex];
+      const location = this.gl.getUniformLocation(program, name);
+      const texture = this.loadTexture(url);
 
-    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    this.gl.activeTexture(this.gl.TEXTURE0);
-    this.gl.uniform1i(debug, 0.0);
+      this.gl.uniform1i(location, index);
+      this.gl.activeTexture(activeTexture);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    });
   }
 
   private loadTexture (url: string): WebGLTexture | null {

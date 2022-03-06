@@ -41,8 +41,8 @@ vec2 mapScene (in vec3 ray) {
     // Translate & rotate sphere coordinates:
     vec3 position = transformSphere(vec3(ray));
 
-    // Get sphere's current radius displacement:
-    float radius = SPHERE.radius + Displacement(position);
+    // Get sphere's current radius distortion:
+    float radius = SPHERE.radius + Distortion(position);
 
     // Create a sphere at the center of the screen:
     float sphereDistance = Sphere(position, radius);

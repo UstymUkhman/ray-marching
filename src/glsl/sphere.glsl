@@ -12,7 +12,7 @@ vec3 transformSphere (in vec3 position) {
   return position;
 }
 
-float Displacement (in vec3 position) {
+float Distortion (in vec3 position) {
   float timeSin = sin(time);
 
   // From "mouse.glsl":
@@ -20,5 +20,6 @@ float Displacement (in vec3 position) {
 
   return sin(position.x + time * 2.0) *
          sin(position.y + timeSin   ) *
-         sin(position.z + time * 4.0) / 2.5;
+         sin(position.z + time * 4.0) *
+  SPHERE.distortion;
 }
