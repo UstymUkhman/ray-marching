@@ -4,6 +4,12 @@ import FRAGMENT_SHADER from '@/glsl/main.frag';
 const clamp = (value: number, min = 0, max = 1): number =>
   Math.max(min, Math.min(value, max));
 
+import DEBUG from '/img/textures/debug.png';
+import GREEN from '/img/textures/green.png';
+import BLACK from '/img/textures/black.png';
+import WHITE from '/img/textures/white.png';
+import BUMP from '/img/textures/bump.png';
+
 const VERTICAL_OFFSET = 5.0;
 const SENSITIVITY     = 7.5;
 
@@ -17,11 +23,11 @@ export default class RayMarching
   private readonly gl: WebGL2RenderingContext;
 
   private readonly textures = new Map([
-    ['debug', '/img/textures/debug.png'],
-    ['green', '/img/textures/green.png'],
-    ['black', '/img/textures/black.png'],
-    ['white', '/img/textures/white.png'],
-    ['bump', '/img/textures/bump.png']
+    ['debug', DEBUG],
+    ['green', GREEN],
+    ['black', BLACK],
+    ['white', WHITE],
+    ['bump', BUMP]
   ]);
 
   private time: WebGLUniformLocation | null = null;

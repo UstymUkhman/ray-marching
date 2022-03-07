@@ -33,8 +33,8 @@ vec2 mapScene (in vec3 ray) {
     float boxDistance = Box(position, vec3(CUBE.size));
 
     // Apply bump factor to box distance value:
-    // boxDistance += BumpMapping(position, boxDistance, CUBE.bump);
-    // boxDistance += CUBE.bump;
+    boxDistance += BumpMapping(position, boxDistance);
+    boxDistance += CUBE.bump;
 
     // Distance to box with its ID:
     vec2 box = vec2(boxDistance, IDs.box);
@@ -52,7 +52,7 @@ vec2 mapScene (in vec3 ray) {
     float sphereDistance = Sphere(position, radius);
 
     // Apply bump factor to sphere distance value:
-    sphereDistance += BumpMapping(position, sphereDistance, SPHERE.bump);
+    sphereDistance += BumpMapping(position, sphereDistance);
     sphereDistance += SPHERE.bump;
 
     // Distance to sphere with its ID:

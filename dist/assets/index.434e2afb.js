@@ -1,4 +1,4 @@
-const d=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};d();var f=`#version 300 es
+const f=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};f();var d=`#version 300 es
 
 precision mediump float;
 
@@ -263,20 +263,31 @@ uniform float time;
 
 uniform sampler2D bump;
 
-float BumpMapping (in vec3 position, in float distance, in float factor) {
+float BumpMapping (in vec3 position, in float distance) {
+  float scale = 1.0;
   float amount = 0.0;
+  float factor = 0.1;
+
+  #ifdef DEBUGGING_CUBE
+    scale = CUBE.scale;
+    factor = CUBE.bump;
+
+  #else
+    scale = SPHERE.scale;
+    factor = SPHERE.bump;
+  #endif
 
   if (distance < 0.1) {
     
     
-    amount += factor * TriplanarMapping(
+    return factor * TriplanarMapping(
       bump,
-      position * SPHERE.scale,
+      position * scale,
       normalize(position + factor)
     ).g;
   }
 
-  return amount;
+  return 0.0;
 }
 
 #ifdef DEBUGGING_CUBE
@@ -359,8 +370,8 @@ vec2 mapScene (in vec3 ray) {
     float boxDistance = Box(position, vec3(CUBE.size));
 
     
-    
-    
+    boxDistance += BumpMapping(position, boxDistance);
+    boxDistance += CUBE.bump;
 
     
     vec2 box = vec2(boxDistance, IDs.box);
@@ -378,7 +389,7 @@ vec2 mapScene (in vec3 ray) {
     float sphereDistance = Sphere(position, radius);
 
     
-    sphereDistance += BumpMapping(position, sphereDistance, SPHERE.bump);
+    sphereDistance += BumpMapping(position, sphereDistance);
     sphereDistance += SPHERE.bump;
 
     
@@ -726,4 +737,4 @@ void main (void) {
 
   color = pow(color, vec3(GAMMA));
   fragColor = vec4(color, 1.0);
-}`;const p=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),c=5,a=7.5;class m{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.textures=new Map([["debug","/img/textures/debug.png"],["green","/img/textures/green.png"],["black","/img/textures/black.png"],["white","/img/textures/white.png"],["bump","/img/textures/bump.png"]]),this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(f,this.gl.VERTEX_SHADER),o=this.loadShader(u,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){this.textures.forEach((o,t)=>{const i=this.gl[`TEXTURE${++e}`],r=this.gl.getUniformLocation(n,t),l=this.loadTexture(o);this.gl.uniform1i(r,e),this.gl.activeTexture(i),this.gl.bindTexture(this.gl.TEXTURE_2D,l)})}loadTexture(n){const e=new Image,o=this.gl.createTexture();return e.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,o),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,e),this.gl.generateMipmap(this.gl.TEXTURE_2D)},e.src=n,o}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=p(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new m(document.getElementById("scene"));
+}`,p="./img/textures/debug.png",m="./img/textures/green.png",h="./img/textures/black.png",v="./img/textures/white.png",g="./img/textures/bump.png";const x=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),c=5,a=7.5;class b{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.textures=new Map([["debug",p],["green",m],["black",h],["white",v],["bump",g]]),this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(d,this.gl.VERTEX_SHADER),o=this.loadShader(u,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){this.textures.forEach((o,t)=>{const i=this.gl[`TEXTURE${++e}`],r=this.gl.getUniformLocation(n,t),l=this.loadTexture(o);this.gl.uniform1i(r,e),this.gl.activeTexture(i),this.gl.bindTexture(this.gl.TEXTURE_2D,l)})}loadTexture(n){const e=new Image,o=this.gl.createTexture();return e.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,o),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,e),this.gl.generateMipmap(this.gl.TEXTURE_2D)},e.src=n,o}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=x(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new b(document.getElementById("scene"));
