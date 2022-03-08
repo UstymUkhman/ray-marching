@@ -1,4 +1,4 @@
-const f=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};f();var d=`#version 300 es
+const d=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};d();var f=`#version 300 es
 
 precision mediump float;
 
@@ -31,6 +31,7 @@ const struct ID {
   int box;
   int plane;
   int sphere;
+  int pedestal;
 };
 
 const struct Ray {
@@ -63,10 +64,16 @@ const struct Light {
   };
 #endif
 
+const struct Pedestal {
+  float size;
+  float scale;
+  float offset;
+};
+
 const float FOV          = 2.5;                    
 const float GAMMA        = 1.0 / 2.2;              
 const vec3  LOOK_AT      = vec3(0.0);              
-const vec3  POSITION     = vec3(0.0, -5.0, -15.0); 
+const vec3  POSITION     = vec3(8.0, -2.5, -15.0); 
 
 const float AMBIENT      = 0.05;                   
 const float FRESNEL      = 0.25;                   
@@ -98,6 +105,12 @@ const float AO_INTENSITY = 0.75;
   );
 #endif
 
+const Pedestal PEDESTAL = Pedestal(
+  5.0,       
+  1.0 / 5.0, 
+  9.5        
+);
+
 const Light LIGHT = Light(
   vec3(20.0, 40.0, -30.0), 
   0.01,                    
@@ -115,8 +128,11 @@ const Ray RAY = Ray(
 const ID IDs = ID(
   0, 
   1, 
-  2  
+  2, 
+  3  
 );
+uniform sampler2D black;
+
 #ifdef DEBUGGING_CUBE
   uniform sampler2D debug;
 
@@ -126,18 +142,18 @@ const ID IDs = ID(
 
 uniform vec2 mouse;
 
-void rotatePosition (inout vec2 position, float amount) {
+void RotatePosition (inout vec2 position, float amount) {
   position = position * cos(amount) +
     vec2(position.y, -position.x) * sin(amount);
 }
 
-vec3 mouseMove (in vec3 origin) {
+vec3 MouseMove (in vec3 origin) {
   
   vec2 coords = mouse / resolution;
 
   
-  rotatePosition(origin.yz, coords.y * RAD - 0.5);
-  rotatePosition(origin.xz, coords.x * TAU);
+  RotatePosition(origin.yz, coords.y * RAD - 0.5);
+  RotatePosition(origin.xz, coords.x * TAU);
 
   return origin;
 }
@@ -217,15 +233,19 @@ vec3 GroundPattern (in vec2 position, in vec2 dpdx, in vec2 dpdy, in bool simple
     return xor * vec3(0.25) + 0.25;
   }
 }
-void pointRotation (inout vec2 point, in float angle) {
+void PointRotation (inout vec2 point, in float angle) {
 	point = cos(angle) * point + sin(angle) * vec2(point.y, -point.x);
 }
 
-void pointRotation45 (inout vec2 point) {
+void PointRotation45 (inout vec2 point) {
 	point = (point + vec2(point.y, -point.x)) * sqrt(0.5);
 }
 
-float maxVec3 (in vec3 vector) {
+float MinVec3 (in vec3 vector) {
+	return max(vector.x, max(vector.y, vector.z));
+}
+
+float MaxVec3 (in vec3 vector) {
 	return max(max(vector.x, vector.y), vector.z);
 }
 
@@ -235,6 +255,40 @@ vec3 SphericalNormal (in vec3 normal) {
   normal /= normal.x + normal.y + normal.z;
 
   return normal;
+}
+
+vec2 MergeObjects (in vec2 object1, in vec2 object2) {
+  return object1.x < object2.x ? object1 : object2;
+}
+
+vec2 MergeByDistance (in vec2 object1, in vec2 object2, in float distance) {
+  return object1.x < object2.x ? vec2(distance, object1.y) : vec2(distance, object2.y);
+}
+
+vec2 MergeObjectsStairs (in vec2 object1, in vec2 object2, in float radius, in float steps) {
+	float size = radius / steps;
+	float merge = object2.x - radius;
+
+	float distance = min(
+    min(object1.x, object2.x),
+    0.5 * (merge + object1.x + abs((
+      mod(merge - object1.x + size, 2.0 * size)
+    ) - size))
+  );
+
+  return MergeByDistance(object1, object2, distance);
+}
+
+vec2 MergeObjectsRound (in vec2 object1, in vec2 object2, in float radius) {
+	vec2 merge = max(vec2(radius - object1.x, radius - object2.x), vec2(0.0));
+	float distance = max(radius, min(object1.x, object2.x)) - length(merge);
+  return MergeByDistance(object1, object2, distance);
+}
+
+vec2 MergeObjectsSoft (in vec2 object1, in vec2 object2, in float radius) {
+	float epsilon = max(radius - abs(object1.x - object2.x), 0.0);
+	float distance = min(object1.x, object2.x) - epsilon * epsilon * 0.25 / radius;
+  return MergeByDistance(object1, object2, distance);
 }
 
 vec3 TriplanarMapping (in sampler2D image, in vec3 position, in vec3 normal) {
@@ -291,33 +345,33 @@ float BumpMapping (in vec3 position, in float distance) {
 }
 
 #ifdef DEBUGGING_CUBE
-  void translateCube (inout vec3 position) {
+  void TranslateCube (inout vec3 position) {
   position.y -= 0.5;
 }
 
-void rotateCube (inout vec3 position) {
-  pointRotation(position.yz, RAD * 0.5);
-  pointRotation(position.xz, time);
+void RotateCube (inout vec3 position) {
+  PointRotation(position.yz, RAD * 0.5);
+  PointRotation(position.xz, time);
 }
 
-vec3 transformCube (in vec3 position) {
-  translateCube(position);
-  rotateCube(position);
+vec3 TransformCube (in vec3 position) {
+  TranslateCube(position);
+  RotateCube(position);
   return position;
 }
 
 #else
-  void translateSphere (inout vec3 position) {
+  void TranslateSphere (inout vec3 position) {
   position.y -= 0.25;
 }
 
-void rotateSphere (inout vec3 position) {
-  pointRotation(position.xz, time);
+void RotateSphere (inout vec3 position) {
+  PointRotation(position.xz, time);
 }
 
-vec3 transformSphere (in vec3 position) {
-  translateSphere(position);
-  rotateSphere(position);
+vec3 TransformSphere (in vec3 position) {
+  TranslateSphere(position);
+  RotateSphere(position);
   return position;
 }
 
@@ -325,7 +379,7 @@ float Distortion (in vec3 position) {
   float timeSin = sin(time);
 
   
-  rotatePosition(position.yz, timeSin);
+  RotatePosition(position.yz, timeSin);
 
   return sin(position.x + time * 2.0) *
          sin(position.y + timeSin   ) *
@@ -339,7 +393,15 @@ float Box (in vec3 position, in vec3 bound) {
 
 	return length(max(distance, vec3(0.0))) +
          
-         maxVec3(min(distance, vec3(0.0)));
+         MaxVec3(min(distance, vec3(0.0)));
+}
+
+float RoundBox (in vec3 position, in vec3 bound, in float radius) {
+	vec3 distance = abs(position) - bound;
+
+  return length(max(distance, 0.0)) +
+         
+         min(MinVec3(distance), 0.0) - radius;
 }
 
 float Sphere (in vec3 position, in float radius) {
@@ -350,21 +412,34 @@ float Plane (in vec3 position, in vec3 normal, in float distanceFromOrigin) {
 	return dot(position, normal) + distanceFromOrigin;
 }
 
-vec2 mergeObjects (in vec2 object1, in vec2 object2) {
-  
-  return object1.x < object2.x ? object1 : object2;
-}
-
 vec2 mapScene (in vec3 ray) {
   
-  float planeDistance = Plane(ray, vec3(0.0, 1.0, 0.0), 4.0);
+  vec2 scene = vec2(0.0);
+
+  
+  float planeDistance = Plane(ray, vec3(0.0, 1.0, 0.0), 5.0);
 
   
   vec2 plane = vec2(planeDistance, IDs.plane);
 
+  
+  vec3 pedestalPosition = vec3(ray);
+  pedestalPosition.y += PEDESTAL.offset;
+
+  float pedestalDistance = RoundBox(
+    pedestalPosition, vec3(PEDESTAL.size), 0.25
+  );
+
+  
+  vec2 pedestal = vec2(pedestalDistance, IDs.pedestal);
+
+  
+  
+  scene = MergeObjectsSoft(plane, pedestal, 0.5);
+
   #ifdef DEBUGGING_CUBE
     
-    vec3 position = transformCube(vec3(ray));
+    vec3 position = TransformCube(vec3(ray));
 
     
     float boxDistance = Box(position, vec3(CUBE.size));
@@ -376,11 +451,11 @@ vec2 mapScene (in vec3 ray) {
     
     vec2 box = vec2(boxDistance, IDs.box);
 
-    return mergeObjects(plane, box);
+    return MergeObjects(scene, box);
 
   #else
     
-    vec3 position = transformSphere(vec3(ray));
+    vec3 position = TransformSphere(vec3(ray));
 
     
     float radius = SPHERE.radius + Distortion(position);
@@ -395,7 +470,7 @@ vec2 mapScene (in vec3 ray) {
     
     vec2 sphere = vec2(sphereDistance, IDs.sphere);
 
-    return mergeObjects(plane, sphere);
+    return MergeObjects(scene, sphere);
   #endif
 }
 
@@ -586,7 +661,7 @@ vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color) {
 }
 
 vec3 render (in vec3 color, in vec2 uv) {
-  vec3 rayOrigin = mouseMove(POSITION);
+  vec3 rayOrigin = MouseMove(POSITION);
   mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
@@ -617,27 +692,33 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
+    else if (objectID == 2) {
+      
+      vec3 normal = SurfaceNormal(position, 1);
+      objectColor += TriplanarMapping(black, position, normal);
+    }
+
     else {
       
       vec3 normal = SurfaceNormal(position, 1);
 
       #ifdef DEBUGGING_CUBE
         
-        rotateCube(normal);
+        RotateCube(normal);
 
         objectColor += TriplanarMapping(
           debug,
-          transformCube(position),
+          TransformCube(position),
           normal
         );
 
       #else
         
-        rotateSphere(normal);
+        RotateSphere(normal);
 
         objectColor += TriplanarMapping(
           green,
-          transformSphere(position),
+          TransformSphere(position),
           normal
         );
 
@@ -737,4 +818,4 @@ void main (void) {
 
   color = pow(color, vec3(GAMMA));
   fragColor = vec4(color, 1.0);
-}`,p="./img/textures/debug.png",m="./img/textures/green.png",h="./img/textures/black.png",v="./img/textures/white.png",g="./img/textures/bump.png";const x=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),c=5,a=7.5;class b{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.textures=new Map([["debug",p],["green",m],["black",h],["white",v],["bump",g]]),this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(d,this.gl.VERTEX_SHADER),o=this.loadShader(u,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){this.textures.forEach((o,t)=>{const i=this.gl[`TEXTURE${++e}`],r=this.gl.getUniformLocation(n,t),l=this.loadTexture(o);this.gl.uniform1i(r,e),this.gl.activeTexture(i),this.gl.bindTexture(this.gl.TEXTURE_2D,l)})}loadTexture(n){const e=new Image,o=this.gl.createTexture();return e.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,o),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,e),this.gl.generateMipmap(this.gl.TEXTURE_2D)},e.src=n,o}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=x(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new b(document.getElementById("scene"));
+}`,p="./img/textures/debug.png",m="./img/textures/green.png",v="./img/textures/black.png",h="./img/textures/white.png",g="./img/textures/bump.png";const x=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),c=5,a=7.5;class b{constructor(n){this.pressed=!1,this.touchOffset=0,this.touchPosition=0,this.mousePosition=[0,0],this.textures=new Map([["debug",p],["green",m],["black",v],["white",h],["bump",g]]),this.time=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/c,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.gl=this.createContext(n);const e=this.createProgram();e&&(this.createScene(e),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(f,this.gl.VERTEX_SHADER),o=this.loadShader(u,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(n){const e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){this.textures.forEach((o,t)=>{const i=this.gl[`TEXTURE${++e}`],r=this.gl.getUniformLocation(n,t),l=this.loadTexture(o);this.gl.uniform1i(r,e),this.gl.activeTexture(i),this.gl.bindTexture(this.gl.TEXTURE_2D,l)})}loadTexture(n){const e=new Image,o=this.gl.createTexture();return e.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,o),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,e),this.gl.generateMipmap(this.gl.TEXTURE_2D)},e.src=n,o}render(n){this.gl.uniform1f(this.time,n*2e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1)}touchStart(n){const{clientX:e}=n.touches[0];this.touchPosition=e,this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e}=n.changedTouches[0];let o=this.touchPosition-e;o=this.touchOffset+=o,o/=this.touchSensitivity,this.gl.uniform2fv(this.mouse,[o,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=x(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/c,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}}new b(document.getElementById("scene"));

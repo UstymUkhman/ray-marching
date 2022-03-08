@@ -1,14 +1,14 @@
-void translateCube (inout vec3 position) {
+void TranslateCube (inout vec3 position) {
   position.y -= 0.5;
 }
 
-void rotateCube (inout vec3 position) {
-  pointRotation(position.yz, RAD * 0.5);
-  pointRotation(position.xz, time);
+void RotateCube (inout vec3 position) {
+  PointRotation(position.yz, RAD * 0.5);
+  PointRotation(position.xz, time);
 }
 
-vec3 transformCube (in vec3 position) {
-  translateCube(position);
-  rotateCube(position);
+vec3 TransformCube (in vec3 position) {
+  TranslateCube(position);
+  RotateCube(position);
   return position;
 }

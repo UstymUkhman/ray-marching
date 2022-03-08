@@ -1,3 +1,5 @@
+uniform sampler2D black;
+
 #ifdef DEBUGGING_CUBE
   uniform sampler2D debug;
 
@@ -16,7 +18,7 @@
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
 vec3 render (in vec3 color, in vec2 uv) {
-  vec3 rayOrigin = mouseMove(POSITION);
+  vec3 rayOrigin = MouseMove(POSITION);
   mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
@@ -47,27 +49,33 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
+    else if (objectID == 2) {
+      // Get normal vector for each position:
+      vec3 normal = SurfaceNormal(position, 1);
+      objectColor += TriplanarMapping(black, position, normal);
+    }
+
     else {
       // Get normal vector for each position:
       vec3 normal = SurfaceNormal(position, 1);
 
       #ifdef DEBUGGING_CUBE
         // Update normal vector rotation:
-        rotateCube(normal);
+        RotateCube(normal);
 
         objectColor += TriplanarMapping(
           debug,
-          transformCube(position),
+          TransformCube(position),
           normal
         );
 
       #else
         // Update normal vector rotation:
-        rotateSphere(normal);
+        RotateSphere(normal);
 
         objectColor += TriplanarMapping(
           green,
-          transformSphere(position),
+          TransformSphere(position),
           normal
         );
 

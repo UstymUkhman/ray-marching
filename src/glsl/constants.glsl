@@ -16,6 +16,7 @@ const struct ID {
   int box;
   int plane;
   int sphere;
+  int pedestal;
 };
 
 const struct Ray {
@@ -48,11 +49,17 @@ const struct Light {
   };
 #endif
 
+const struct Pedestal {
+  float size;
+  float scale;
+  float offset;
+};
+
 // Scene & Camera:
 const float FOV          = 2.5;                    // Field of View
 const float GAMMA        = 1.0 / 2.2;              // Gamma Correction
 const vec3  LOOK_AT      = vec3(0.0);              // Camera orientation
-const vec3  POSITION     = vec3(0.0, -5.0, -15.0); // Ray origin initial position
+const vec3  POSITION     = vec3(8.0, -2.5, -15.0); // Ray origin initial position
 
 // Lighting:
 const float AMBIENT      = 0.05;                   // Ambient factor
@@ -88,6 +95,12 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
   );
 #endif
 
+const Pedestal PEDESTAL = Pedestal(
+  5.0,       // Size
+  1.0 / 5.0, // Scale
+  9.5        // Vertical Offset
+);
+
 const Light LIGHT = Light(
   vec3(20.0, 40.0, -30.0), // Position
   0.01,                    // Initial distance
@@ -105,5 +118,6 @@ const Ray RAY = Ray(
 const ID IDs = ID(
   0, // Box
   1, // Plane
-  2  // Sphere
+  2, // Sphere
+  3  // Pedestal
 );
