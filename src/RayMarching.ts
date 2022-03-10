@@ -180,7 +180,7 @@ export default class RayMarching
   }
 
   private render (delta: number): void {
-    this.gl.uniform1f(this.time, delta * 0.0002);
+    this.gl.uniform1f(this.time, delta * 1e-4);
     this.gl.drawArrays(this.gl.TRIANGLES, 0.0, 6.0);
 
     requestAnimationFrame(this.render.bind(this));

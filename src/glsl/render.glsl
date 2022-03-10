@@ -7,8 +7,8 @@ uniform sampler2D black;
   uniform sampler2D green;
 #endif
 
+#include "fog.glsl";
 #include "mouse.glsl";
-#include "color.glsl";
 #include "camera.glsl";
 
 #include "checker.glsl";
@@ -18,12 +18,22 @@ uniform sampler2D black;
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
 vec3 render (in vec3 color, in vec2 uv) {
+  vec3 backgroundColor = vec3(0.0);
   vec3 rayOrigin = MouseMove(POSITION);
   mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
   // Get raymarching distance result:
   vec2 object = raycast(rayOrigin, rayDirection);
+
+  #ifdef DYNAMIC_FOG
+    // Set dynamic fog & background colors:
+    UpdateColor(backgroundColor, time, true);
+    backgroundColor = mix(FOG.color, backgroundColor, 0.25);
+
+  #else
+    backgroundColor = FOG.color;
+  #endif
 
   // Object hit, ray distance is
   // closer than max ray distance:
@@ -49,53 +59,48 @@ vec3 render (in vec3 color, in vec2 uv) {
       objectColor = GroundPattern(position.xz, dpdx.xz, dpdy.xz, false);
     }
 
-    else if (objectID == 2) {
-      // Get normal vector for each position:
-      vec3 normal = SurfaceNormal(position, 1);
-      objectColor += TriplanarMapping(black, position, normal);
-    }
-
     else {
       // Get normal vector for each position:
       vec3 normal = SurfaceNormal(position, 1);
 
-      #ifdef DEBUGGING_CUBE
-        // Update normal vector rotation:
-        RotateCube(normal);
+      if (objectID == 2) {
+        objectColor += TriplanarMapping(black, position, normal);
+      }
 
-        objectColor += TriplanarMapping(
-          debug,
-          TransformCube(position),
-          normal
-        );
+      else {
+        #ifdef DEBUGGING_CUBE
+          // Update normal vector rotation:
+          RotateCube(normal);
 
-      #else
-        // Update normal vector rotation:
-        RotateSphere(normal);
+          objectColor += TriplanarMapping(
+            debug,
+            TransformCube(position),
+            normal
+          );
 
-        objectColor += TriplanarMapping(
-          green,
-          TransformSphere(position),
-          normal
-        );
+        #else
+          // Update normal vector rotation:
+          RotateSphere(normal);
 
-        // Dynamic color updates:
-        // UpdateColor(objectColor, time, true);
-      #endif
+          objectColor += TriplanarMapping(
+            green,
+            TransformSphere(position),
+            normal
+          );
+        #endif
+      }
     }
 
     // Define object color and lighting when hitted:
     color += Lighting(position, rayDirection, objectColor);
 
-    // Exponential squared fog:
-    float fogDepth = object.x * object.x;
-    float fogFactor = 1.0 - exp(-FOG_DENSITY * fogDepth);
-    color = mix(color, BACKGROUND, fogFactor);
+    // Set fog based on object & background colors:
+    UseFog(color, backgroundColor, object.x);
   }
 
   else {
     // Sky background color:
-    color += BACKGROUND - max(0.9 * rayDirection.y, 0.0);
+    color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
   }
 
   return color;

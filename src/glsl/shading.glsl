@@ -11,7 +11,7 @@ float softShadow (in vec3 position, in vec3 direction) {
     vec3 ray = position + lightDistance * direction;
 
     // Cast ray to the light source:
-    float distance = mapScene(ray).x;
+    float distance = MapScene(ray).x;
     float scaledDistance = lightDistance * LIGHT.size;
 
     // Light amount is proportional to the ratio of the

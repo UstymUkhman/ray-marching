@@ -9,10 +9,10 @@ vec3 SurfaceNormal (in vec3 position, in int complexity) {
     vec2 epsilon = vec2(RAY.epsilon, 0.0);
 
     normal = vec3(
-      mapScene(position).x - vec3(
-        mapScene(position - epsilon.xyy).x,
-        mapScene(position - epsilon.yxy).x,
-        mapScene(position - epsilon.yyx).x
+      MapScene(position).x - vec3(
+        MapScene(position - epsilon.xyy).x,
+        MapScene(position - epsilon.yxy).x,
+        MapScene(position - epsilon.yyx).x
       )
     );
   }
@@ -22,15 +22,15 @@ vec3 SurfaceNormal (in vec3 position, in int complexity) {
     vec2 epsilon = vec2(1.0, -1.0) * 0.5773 * 0.0005;
 
     normal = vec3(
-      epsilon.xyy * mapScene(position + epsilon.xyy).x +
-      epsilon.yyx * mapScene(position + epsilon.yyx).x +
-      epsilon.yxy * mapScene(position + epsilon.yxy).x +
-      epsilon.xxx * mapScene(position + epsilon.xxx).x
+      epsilon.xyy * MapScene(position + epsilon.xyy).x +
+      epsilon.yyx * MapScene(position + epsilon.yyx).x +
+      epsilon.yxy * MapScene(position + epsilon.yxy).x +
+      epsilon.xxx * MapScene(position + epsilon.xxx).x
     );
   }
 
   else {
-    // A way to prevent the compiler from inlining "mapScene" 4 times:
+    // A way to prevent the compiler from inlining "MapScene" 4 times:
     for (int i = 0; i < 4; i++) {
       vec3 epsilon = (
         vec3(
@@ -40,7 +40,7 @@ vec3 SurfaceNormal (in vec3 position, in int complexity) {
         ) * 2.0 - 1.0
       ) * 0.5773;
 
-      normal += epsilon * mapScene(position + epsilon * 0.0005).x;
+      normal += epsilon * MapScene(position + epsilon * 0.0005).x;
     }
   }
 

@@ -1,5 +1,6 @@
 // Macros:
-#define DEBUGGING_CUBE
+#define DYNAMIC_FOG
+// #define DEBUGGING_CUBE
 #define ANTI_ALIASING 4
 #define USE_SOFT_SHADOWS
 #define AMBIENT_OCCLUSSION
@@ -19,6 +20,11 @@ const struct ID {
   int pedestal;
 };
 
+const struct Fog {
+  vec3  color;
+  float density;
+};
+
 const struct Ray {
   int   steps;
   float distance;
@@ -31,6 +37,14 @@ const struct Light {
   float size;
   float min;
   float max;
+};
+
+const struct Base {
+  float radius;
+  float topSize;
+  float topOffset;
+  float bottomSize;
+  float bottomOffset;
 };
 
 #ifdef DEBUGGING_CUBE
@@ -49,35 +63,30 @@ const struct Light {
   };
 #endif
 
-const struct Pedestal {
-  float size;
-  float scale;
-  float offset;
-};
-
 // Scene & Camera:
 const float FOV          = 2.5;                    // Field of View
 const float GAMMA        = 1.0 / 2.2;              // Gamma Correction
 const vec3  LOOK_AT      = vec3(0.0);              // Camera orientation
-const vec3  POSITION     = vec3(8.0, -2.5, -15.0); // Ray origin initial position
+const vec3  POSITION     = vec3(0.0, -5.0, -15.0); // Ray origin initial position
 
 // Lighting:
 const float AMBIENT      = 0.05;                   // Ambient factor
 const float FRESNEL      = 0.25;                   // Fresnel factor
 const float REFLECTION   = 0.05;                   // Reflection amout
-
-// Colors:
 const vec3  SPECULAR     = vec3(0.5);              // Specular color
-const vec3  BACKGROUND   = vec3(0.5, 0.8, 0.9);    // Skybox color
-
-// Fog:
-const vec3  FOG_COLOR    = vec3(0.5);              // Fog color
-const float FOG_DENSITY  = 0.00025;                // Fog density
 
 // Ambient Occlussion:
 const int   AO_STEPS     = 8;                      // Occlussion steps to perform
 const float AO_FACTOR    = 0.85;                   // Occlussion factor at each step
 const float AO_INTENSITY = 0.75;                   // Average occlusion intensity
+
+const Base BASE = Base(
+  0.25, // Radius
+  3.0,  // Top Size
+  6.5,  // Top Offset
+  5.0,  // Bottom Size
+  9.5   // Bottom Offset
+);
 
 #ifdef DEBUGGING_CUBE
   const Cube CUBE = Cube(
@@ -95,18 +104,17 @@ const float AO_INTENSITY = 0.75;                   // Average occlusion intensit
   );
 #endif
 
-const Pedestal PEDESTAL = Pedestal(
-  5.0,       // Size
-  1.0 / 5.0, // Scale
-  9.5        // Vertical Offset
-);
-
 const Light LIGHT = Light(
   vec3(20.0, 40.0, -30.0), // Position
   0.01,                    // Initial distance
   0.03,                    // Size
   0.0001,                  // Min light distance
   60.0                     // Max light distance
+);
+
+const Fog FOG = Fog(
+  vec3(0.5, 0.8, 0.9), // Color
+  0.00025              // Density
 );
 
 const Ray RAY = Ray(

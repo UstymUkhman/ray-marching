@@ -5,7 +5,7 @@ vec2 raycast (in vec3 position, in vec3 direction) {
   for (int i = 0; i < RAY.steps; i++) {
     vec3 ray = position + object.x * direction;
 
-    distance = mapScene(ray);
+    distance = MapScene(ray);
 
     object.x += distance.x;
     object.y  = distance.y;

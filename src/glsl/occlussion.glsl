@@ -9,7 +9,7 @@ float ambientOcclussion (in vec3 position, in vec3 normal) {
 
     // Cast ray along the "normal" vector and get distance
     // between the current point and the closest surface:
-    float distance = mapScene(position + normal * length).x;
+    float distance = MapScene(position + normal * length).x;
 
     // Add occlusion amount to the
     // current point on the surface:
