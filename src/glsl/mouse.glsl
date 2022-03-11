@@ -1,5 +1,6 @@
 // Mouse position:
-uniform vec2 mouse;
+uniform float zoom;
+uniform vec2  mouse;
 
 // Rotate on one axis by "amount":
 void RotatePosition (inout vec2 position, float amount) {
@@ -8,9 +9,10 @@ void RotatePosition (inout vec2 position, float amount) {
 }
 
 // Update ray origin on mouse move:
-vec3 MouseMove (in vec3 origin) {
+vec3 MouseMove () {
   // Normalize mouse coordinates:
   vec2 coords = mouse / resolution;
+  vec3 origin = vec3(POSITION, zoom);
 
   // Rotate ray origin position around its axes:
   RotatePosition(origin.yz, coords.y * RAD - 0.5);

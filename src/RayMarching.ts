@@ -1,8 +1,5 @@
-import VERTEX_SHADER from '@/glsl/main.vert';
 import FRAGMENT_SHADER from '@/glsl/main.frag';
-
-const clamp = (value: number, min = 0, max = 1): number =>
-  Math.max(min, Math.min(value, max));
+import VERTEX_SHADER from '@/glsl/main.vert';
 
 import DEBUG from '/img/textures/debug.png';
 import GREEN from '/img/textures/green.png';
@@ -10,27 +7,41 @@ import BLACK from '/img/textures/black.png';
 import WHITE from '/img/textures/white.png';
 import BUMP from '/img/textures/bump.png';
 
-const VERTICAL_OFFSET = 5.0;
-const SENSITIVITY     = 7.5;
+const lerp = (v0: number, v1: number, t: number): number =>
+  v0 + t * (v1 - v0);
+
+const clamp = (value: number, min = 0, max = 1): number =>
+  Math.max(min, Math.min(value, max));
+
+const VERTICAL_OFFSET =  5.0;
+const SENSITIVITY     =  7.5;
+const MIN_ZOOM        = 10.0;
+const MAX_ZOOM        = 20.0;
 
 export default class RayMarching
 {
   private pressed = false;
+  private startZoom = 0.0;
+  private targetZoom = 15.0;
   private touchOffset = 0.0;
-  private touchPosition = 0.0;
+  private currentZoom = 15.0;
 
+  private touchPosition = [0.0, 0.0];
   private mousePosition = [0.0, 0.0];
-  private readonly gl: WebGL2RenderingContext;
 
-  private readonly textures = new Map([
-    ['debug', DEBUG],
-    ['green', GREEN],
-    ['black', BLACK],
-    ['white', WHITE],
-    ['bump', BUMP]
-  ]);
+  private readonly gl: WebGL2RenderingContext;
+  private readonly program: RayMarchingProgram | void;
+
+  private readonly textures = {
+    debug: DEBUG,
+    green: GREEN,
+    black: BLACK,
+    white: WHITE,
+    bump: BUMP
+  };
 
   private time: WebGLUniformLocation | null = null;
+  private zoom: WebGLUniformLocation | null = null;
   private mouse: WebGLUniformLocation | null = null;
   private resolution: WebGLUniformLocation | null = null;
 
@@ -47,15 +58,15 @@ export default class RayMarching
   private readonly onMouseUp = this.mouseUp.bind(this);
 
   private readonly onResize = this.resize.bind(this);
+  private readonly onWheel = this.wheel.bind(this);
 
   public constructor (scene: HTMLCanvasElement) {
     this.gl = this.createContext(scene);
-    const program = this.createProgram();
+    this.program = this.createProgram();
 
-    if (program) {
-      this.createScene(program);
+    if (this.program) {
+      this.createScene();
       this.addEventListeners();
-
       requestAnimationFrame(this.render.bind(this));
     }
   }
@@ -93,7 +104,8 @@ export default class RayMarching
     return program;
   }
 
-  private createScene (program: RayMarchingProgram): void {
+  private createScene (): void {
+    const program = this.program as RayMarchingProgram;
     const BUFFER = this.gl.createBuffer();
 
     const COORDS = new Float32Array([
@@ -117,6 +129,7 @@ export default class RayMarching
     this.gl.bufferData(this.gl.ARRAY_BUFFER, COORDS, this.gl.STATIC_DRAW);
 
     this.time = this.gl.getUniformLocation(program, 'time');
+    this.zoom = this.gl.getUniformLocation(program, 'zoom');
     this.mouse = this.gl.getUniformLocation(program, 'mouse');
     this.resolution = this.gl.getUniformLocation(program, 'resolution');
 
@@ -145,41 +158,55 @@ export default class RayMarching
   }
 
   private loadTextures (program: RayMarchingProgram, index = -1): void {
-    this.textures.forEach((url, name) => {
-      const activeTexture = this.gl[`TEXTURE${++index}` as TextureIndex];
-      const location = this.gl.getUniformLocation(program, name);
-      const texture = this.loadTexture(url);
+    const names = Object.keys(this.textures);
+    const textures = Object.values(this.textures).map(
+      texture => this.loadTexture(texture)
+    );
 
-      this.gl.uniform1i(location, index);
-      this.gl.activeTexture(activeTexture);
-      this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    Promise.all(textures).then(
+      textures => textures.forEach(texture => {
+        const activeTexture = this.gl[`TEXTURE${++index}` as TextureIndex];
+        const location = this.gl.getUniformLocation(program, names[index]);
+
+        this.gl.uniform1i(location, index);
+        this.gl.activeTexture(activeTexture);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+      })
+    );
+  }
+
+  private loadTexture (url: string): Promise<WebGLTexture | null> {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      const texture = this.gl.createTexture();
+
+      image.onload = () => {
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+        this.gl.texImage2D(
+          this.gl.TEXTURE_2D,
+          0.0,
+          this.gl.RGBA,
+          this.gl.RGBA,
+          this.gl.UNSIGNED_BYTE,
+          image
+        );
+
+        this.gl.generateMipmap(this.gl.TEXTURE_2D);
+        resolve(texture);
+      };
+
+      image.onerror = error => reject(error);
+      image.src = url;
     });
   }
 
-  private loadTexture (url: string): WebGLTexture | null {
-    const image = new Image();
-    const texture = this.gl.createTexture();
-
-    image.onload = () => {
-      this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-
-      this.gl.texImage2D(
-        this.gl.TEXTURE_2D,
-        0.0,
-        this.gl.RGBA,
-        this.gl.RGBA,
-        this.gl.UNSIGNED_BYTE,
-        image
-      );
-
-      this.gl.generateMipmap(this.gl.TEXTURE_2D);
-    };
-
-    image.src = url;
-    return texture;
-  }
-
   private render (delta: number): void {
+    const elapsed = Date.now() - this.startZoom;
+    const time = Math.min(elapsed * 0.002, 1.0);
+    const zoom = lerp(this.currentZoom, this.targetZoom, time);
+
+    this.gl.uniform1f(this.zoom, -zoom);
     this.gl.uniform1f(this.time, delta * 1e-4);
     this.gl.drawArrays(this.gl.TRIANGLES, 0.0, 6.0);
 
@@ -196,23 +223,29 @@ export default class RayMarching
     document.addEventListener('mouseup', this.onMouseUp, false);
 
     window.addEventListener('resize', this.onResize, false);
+    window.addEventListener('wheel', this.onWheel, false);
   }
 
   private touchStart (event: TouchEvent): void {
-    const { clientX } = event.touches[0];
-    this.touchPosition = clientX;
+    const { clientX, clientY } = event.touches[0];
+    this.touchPosition = [clientX, clientY];
     this.pressed = true;
   }
 
   private touchMove (event: TouchEvent): void {
     if (!this.pressed) return;
 
-    const { clientX } = event.changedTouches[0];
-    let x = this.touchPosition - clientX;
+    const { clientX, clientY } = event.changedTouches[0];
+    const y = this.touchPosition[1] - clientY;
+    let x = this.touchPosition[0] - clientX;
 
     x  = this.touchOffset += x;
     x /= this.touchSensitivity;
 
+    this.targetZoom = this.zoomValue + -Math.sign(y) / SENSITIVITY;
+    this.targetZoom = clamp(this.targetZoom, MIN_ZOOM, MAX_ZOOM);
+
+    this.gl.uniform1f(this.zoom, -this.targetZoom);
     this.gl.uniform2fv(this.mouse, [x, 0.0]);
   }
 
@@ -253,5 +286,20 @@ export default class RayMarching
 
     this.gl.canvas.height = height;
     this.gl.canvas.width = width;
+  }
+
+  private wheel ({ deltaY }: WheelEvent): void {
+    this.startZoom = Date.now();
+    this.currentZoom = this.zoomValue;
+
+    deltaY = Math.sign(-deltaY) * SENSITIVITY;
+    this.targetZoom = this.currentZoom + deltaY;
+    this.targetZoom = clamp(this.targetZoom, MIN_ZOOM, MAX_ZOOM);
+  }
+
+  private get zoomValue (): number {
+    const program = this.program ?? this.gl.getParameter(this.gl.CURRENT_PROGRAM) as RayMarchingProgram;
+    const zoomLocation = this.gl.getUniformLocation(program, 'zoom') as WebGLUniformLocation;
+    return -this.gl.getUniform(program, zoomLocation);
   }
 }

@@ -64,21 +64,21 @@ const struct Base {
 #endif
 
 // Scene & Camera:
-const float FOV          = 2.5;                    // Field of View
-const float GAMMA        = 1.0 / 2.2;              // Gamma Correction
-const vec3  LOOK_AT      = vec3(0.0);              // Camera orientation
-const vec3  POSITION     = vec3(0.0, -5.0, -15.0); // Ray origin initial position
+const float FOV          = 2.5;             // Field of View
+const float GAMMA        = 1.0 / 2.2;       // Gamma Correction
+const vec3  LOOK_AT      = vec3(0.0);       // Camera orientation
+const vec2  POSITION     = vec2(0.0, -7.5); // Ray origin initial position
 
 // Lighting:
-const float AMBIENT      = 0.05;                   // Ambient factor
-const float FRESNEL      = 0.25;                   // Fresnel factor
-const float REFLECTION   = 0.05;                   // Reflection amout
-const vec3  SPECULAR     = vec3(0.5);              // Specular color
+const float AMBIENT      = 0.05;      // Ambient factor
+const float FRESNEL      = 0.25;      // Fresnel factor
+const float REFLECTION   = 0.05;      // Reflection amout
+const vec3  SPECULAR     = vec3(0.5); // Specular color
 
 // Ambient Occlussion:
-const int   AO_STEPS     = 8;                      // Occlussion steps to perform
-const float AO_FACTOR    = 0.85;                   // Occlussion factor at each step
-const float AO_INTENSITY = 0.75;                   // Average occlusion intensity
+const int   AO_STEPS     = 8;    // Occlussion steps to perform
+const float AO_FACTOR    = 0.85; // Occlussion factor at each step
+const float AO_INTENSITY = 0.75; // Average occlusion intensity
 
 const Base BASE = Base(
   0.25, // Radius

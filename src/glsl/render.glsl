@@ -18,8 +18,9 @@ uniform sampler2D black;
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
 vec3 render (in vec3 color, in vec2 uv) {
+  vec3 rayOrigin = MouseMove();
   vec3 backgroundColor = vec3(0.0);
-  vec3 rayOrigin = MouseMove(POSITION);
+
   mat3 camera = Camera(rayOrigin, LOOK_AT);
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
