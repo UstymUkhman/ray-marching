@@ -12,5 +12,5 @@ pids
 .lock-wscript
 
 node_modules
-src/glsl/hg_sdf.glsl
+dist/img/textures/earth
 public/img/textures/earth

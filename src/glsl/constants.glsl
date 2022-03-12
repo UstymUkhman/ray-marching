@@ -1,8 +1,11 @@
 // Macros:
 #define DYNAMIC_FOG
+#define BUMP_MAPPING
+#define SOFT_SHADOWS
+// #define EARTH_TEXTURE
+
 // #define DEBUGGING_CUBE
 #define ANTI_ALIASING 4
-#define USE_SOFT_SHADOWS
 #define AMBIENT_OCCLUSSION
 
 #define PI          3.14159265358979323846

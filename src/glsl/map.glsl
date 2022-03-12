@@ -25,9 +25,11 @@ vec2 MapScene (in vec3 ray) {
     // Create a box at the center of the screen:
     float boxDistance = Box(position, vec3(CUBE.size));
 
-    // Apply bump factor to box distance value:
-    boxDistance += BumpMapping(position, boxDistance);
-    boxDistance += CUBE.bump;
+    #ifdef BUMP_MAPPING
+      // Apply bump factor to box distance value:
+      boxDistance += BumpMapping(position, boxDistance);
+      boxDistance += CUBE.bump;
+    #endif
 
     // Distance to box with its ID:
     vec2 box = vec2(boxDistance, IDs.box);
@@ -44,9 +46,11 @@ vec2 MapScene (in vec3 ray) {
     // Create a sphere at the center of the screen:
     float sphereDistance = Sphere(position, radius);
 
-    // Apply bump factor to sphere distance value:
-    sphereDistance += BumpMapping(position, sphereDistance);
-    sphereDistance += SPHERE.bump;
+    #ifdef BUMP_MAPPING
+      // Apply bump factor to sphere distance value:
+      sphereDistance += BumpMapping(position, sphereDistance);
+      sphereDistance += SPHERE.bump;
+    #endif
 
     // Distance to sphere with its ID:
     vec2 sphere = vec2(sphereDistance, IDs.sphere);

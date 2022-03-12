@@ -82,7 +82,7 @@ vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color) {
 
   vec3 specularDiffuse = specular + diffuse;
 
-  #ifdef USE_SOFT_SHADOWS
+  #ifdef SOFT_SHADOWS
     specularDiffuse *= softShadow(origin, lightPosition);
   #else
     float objectDistance = raycast(origin, lightPosition).x;

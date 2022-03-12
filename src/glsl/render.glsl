@@ -4,7 +4,12 @@ uniform sampler2D black;
   uniform sampler2D debug;
 
 #else
-  uniform sampler2D green;
+  #ifdef EARTH_TEXTURE
+    uniform sampler2D earthColor;
+
+  #else
+    uniform sampler2D green;
+  #endif
 #endif
 
 #include "fog.glsl";
@@ -65,7 +70,7 @@ vec3 render (in vec3 color, in vec2 uv) {
       vec3 normal = SurfaceNormal(position, 1);
 
       if (objectID == 2) {
-        objectColor += TriplanarMapping(black, position, normal);
+        objectColor = TriplanarMapping(black, position, normal);
       }
 
       else {
@@ -73,21 +78,33 @@ vec3 render (in vec3 color, in vec2 uv) {
           // Update normal vector rotation:
           RotateCube(normal);
 
-          objectColor += TriplanarMapping(
+          objectColor = TriplanarMapping(
             debug,
             TransformCube(position),
             normal
           );
 
         #else
-          // Update normal vector rotation:
-          RotateSphere(normal);
+          #ifdef EARTH_TEXTURE
+            vec4 earth = UsePlainTexture(
+              earthColor, TransformSphere(position)
+            );
 
-          objectColor += TriplanarMapping(
-            green,
-            TransformSphere(position),
-            normal
-          );
+            objectColor = mix(
+              vec3(1.0), earth.rgb,
+              smoothstep(1.0, 0.99, abs(earth.a * 0.72))
+            );
+
+          #else
+            // Update normal vector rotation:
+            RotateSphere(normal);
+
+            objectColor = TriplanarMapping(
+              green,
+              TransformSphere(position),
+              normal
+            );
+          #endif
         #endif
       }
     }

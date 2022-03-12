@@ -1,6 +1,8 @@
 import FRAGMENT_SHADER from '@/glsl/main.frag';
 import VERTEX_SHADER from '@/glsl/main.vert';
 
+import EARTH_COLOR from '/img/textures/earth/color.jpg';
+
 import DEBUG from '/img/textures/debug.png';
 import GREEN from '/img/textures/green.png';
 import BLACK from '/img/textures/black.png';
@@ -33,6 +35,7 @@ export default class RayMarching
   private readonly program: RayMarchingProgram | void;
 
   private readonly textures = {
+    earthColor: EARTH_COLOR,
     debug: DEBUG,
     green: GREEN,
     black: BLACK,
