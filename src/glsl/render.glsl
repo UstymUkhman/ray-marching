@@ -1,20 +1,29 @@
+// Delta time:
+uniform float time;
+
+// Pedestal texture:
 uniform sampler2D black;
 
+#include "fog.glsl";
+#include "utils.glsl";
+#include "mouse.glsl";
+#include "camera.glsl";
+
 #ifdef DEBUGGING_CUBE
+  #include "cube.glsl";
   uniform sampler2D debug;
 
 #else
+  #include "sphere.glsl";
+
   #ifdef EARTH_TEXTURE
+    uniform sampler2D earthNormal;
     uniform sampler2D earthColor;
 
   #else
     uniform sampler2D green;
   #endif
 #endif
-
-#include "fog.glsl";
-#include "mouse.glsl";
-#include "camera.glsl";
 
 #include "checker.glsl";
 #include "texture.glsl";
@@ -44,7 +53,9 @@ vec3 render (in vec3 color, in vec2 uv) {
   // Object hit, ray distance is
   // closer than max ray distance:
   if (object.x < RAY.distance) {
+    vec3 normalColor = vec3(0.0);
     vec3 objectColor = vec3(0.0);
+
     int objectID = int(object.y) - 1;
 
     // Define ray's current position based on its
@@ -86,13 +97,20 @@ vec3 render (in vec3 color, in vec2 uv) {
 
         #else
           #ifdef EARTH_TEXTURE
-            vec4 earth = UsePlainTexture(
+            normalColor = UsePlainTexture(
+              earthNormal, TransformSphere(position)
+            ).rgb;
+
+            normalColor  = normalize(normalColor * 2.0 - 1.0);
+            normalColor *= normalize(LIGHT.position);
+
+            vec4 earthTexture = UsePlainTexture(
               earthColor, TransformSphere(position)
             );
 
             objectColor = mix(
-              vec3(1.0), earth.rgb,
-              smoothstep(1.0, 0.99, abs(earth.a * 0.72))
+              vec3(1.0), earthTexture.rgb,
+              smoothstep(1.0, 0.99, abs(earthTexture.a * 0.72))
             );
 
           #else
@@ -110,7 +128,7 @@ vec3 render (in vec3 color, in vec2 uv) {
     }
 
     // Define object color and lighting when hitted:
-    color += Lighting(position, rayDirection, objectColor);
+    color += Lighting(position, rayDirection, objectColor, normalColor);
 
     // Set fog based on object & background colors:
     UseFog(color, backgroundColor, object.x);

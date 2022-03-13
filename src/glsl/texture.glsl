@@ -1,5 +1,3 @@
-#include "utils.glsl";
-
 // [Triplanar Texture Mapping]
 vec3 TriplanarMapping (in sampler2D image, in vec3 position, in vec3 normal) {
   #ifdef DEBUGGING_CUBE

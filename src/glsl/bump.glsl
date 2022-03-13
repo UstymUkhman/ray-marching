@@ -1,4 +1,9 @@
-uniform sampler2D bump;
+#ifdef EARTH_TEXTURE
+  uniform sampler2D earthBump;
+
+#else
+  uniform sampler2D bump;
+#endif
 
 // [Bump Mapping]
 // Get texture color value for small distance
@@ -20,11 +25,18 @@ float BumpMapping (in vec3 position, in float distance) {
   if (distance < 0.1) {
     // Use green channel from texture
     // to get bump value in this point:
-    return factor * TriplanarMapping(
-      bump,
-      position * scale,
-      normalize(position + factor)
-    ).g;
+    #ifdef EARTH_TEXTURE
+      return -factor * UsePlainTexture(
+        earthBump, position
+      ).g * scale;
+
+    #else
+      return factor * TriplanarMapping(
+        bump,
+        position * scale,
+        normalize(position + factor)
+      ).g;
+    #endif
   }
 
   return 0.0;

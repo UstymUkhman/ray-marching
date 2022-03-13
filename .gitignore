@@ -12,5 +12,3 @@ pids
 .lock-wscript
 
 node_modules
-dist/img/textures/earth
-public/img/textures/earth

@@ -1,7 +1,9 @@
 import FRAGMENT_SHADER from '@/glsl/main.frag';
 import VERTEX_SHADER from '@/glsl/main.vert';
 
+import EARTH_NORMAL from '/img/textures/earth/normal.jpg';
 import EARTH_COLOR from '/img/textures/earth/color.jpg';
+import EARTH_BUMP from '/img/textures/earth/bump.jpg';
 
 import DEBUG from '/img/textures/debug.png';
 import GREEN from '/img/textures/green.png';
@@ -35,7 +37,10 @@ export default class RayMarching
   private readonly program: RayMarchingProgram | void;
 
   private readonly textures = {
+    earthNormal: EARTH_NORMAL,
     earthColor: EARTH_COLOR,
+    earthBump: EARTH_BUMP,
+
     debug: DEBUG,
     green: GREEN,
     black: BLACK,

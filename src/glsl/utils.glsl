@@ -17,15 +17,6 @@ float MaxVec3 (in vec3 vector) {
 	return max(max(vector.x, vector.y), vector.z);
 }
 
-// Tweak normal values for spherical meshes:
-vec3 SphericalNormal (in vec3 normal) {
-  normal  = abs(normal);
-  normal  = pow(normal, vec3(5.0));
-  normal /= normal.x + normal.y + normal.z;
-
-  return normal;
-}
-
 // Merge objects by returning the closest to the camera:
 vec2 MergeObjects (in vec2 object1, in vec2 object2) {
   return object1.x < object2.x ? object1 : object2;

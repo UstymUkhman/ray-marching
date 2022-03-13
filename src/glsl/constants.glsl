@@ -70,7 +70,7 @@ const struct Base {
 const float FOV          = 2.5;             // Field of View
 const float GAMMA        = 1.0 / 2.2;       // Gamma Correction
 const vec3  LOOK_AT      = vec3(0.0);       // Camera orientation
-const vec2  POSITION     = vec2(0.0, -7.5); // Ray origin initial position
+const vec2  POSITION     = vec2(0.0, -5.0); // Ray origin initial position
 
 // Lighting:
 const float AMBIENT      = 0.05;      // Ambient factor
@@ -103,17 +103,34 @@ const Base BASE = Base(
     0.0,       // Distortion
     3.0,       // Radius
     3.0 / RAD, // Scale
-    0.12       // Bump Factor
+
+    // Bump Factor:
+    #ifdef EARTH_TEXTURE
+      0.15
+    #else
+      0.12
+    #endif
   );
 #endif
 
-const Light LIGHT = Light(
-  vec3(20.0, 40.0, -30.0), // Position
-  0.01,                    // Initial distance
-  0.03,                    // Size
-  0.0001,                  // Min light distance
-  60.0                     // Max light distance
-);
+#ifdef EARTH_TEXTURE
+  const Light LIGHT = Light(
+    vec3(40.0, 2.5, -30.0), // Position
+    0.05,                   // Initial distance
+    0.09,                   // Size
+    0.05,                   // Min light distance
+    60.0                    // Max light distance
+  );
+
+#else
+  const Light LIGHT = Light(
+    vec3(20.0, 40.0, -30.0), // Position
+    0.01,                    // Initial distance
+    0.03,                    // Size
+    0.0001,                  // Min light distance
+    60.0                     // Max light distance
+  );
+#endif
 
 const Fog FOG = Fog(
   vec3(0.5, 0.8, 0.9), // Color

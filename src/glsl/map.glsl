@@ -1,17 +1,6 @@
-// Delta time:
-uniform float time;
-
-#include "bump.glsl";
-
-#ifdef DEBUGGING_CUBE
-  #include "cube.glsl";
-
-#else
-  #include "sphere.glsl";
-#endif
-
 #include "primitives.glsl";
 #include "pedestal.glsl";
+#include "bump.glsl";
 
 // Map ray to scene:
 vec2 MapScene (in vec3 ray) {
