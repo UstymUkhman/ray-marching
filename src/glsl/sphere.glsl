@@ -22,6 +22,7 @@ void TranslateSphere (inout vec3 position) {
 }
 
 void RotateSphere (inout vec3 position) {
+  PointRotation(position.xy, -0.409);
   PointRotation(position.xz, time);
 }
 

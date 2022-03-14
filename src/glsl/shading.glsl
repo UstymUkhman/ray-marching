@@ -3,7 +3,7 @@
 #include "occlussion.glsl";
 
 // RayMarching loop with "Soft Shadows" factor:
-float SoftShadow (in vec3 position, in vec3 direction) {
+float SoftShadow (in vec3 position, in vec3 direction, in float minLightDistance) {
   float result = 1.0;
   float lightDistance = LIGHT.distance;
 
@@ -24,7 +24,7 @@ float SoftShadow (in vec3 position, in vec3 direction) {
     bool far = lightDistance > LIGHT.max;
 
     // Light has hit the surface of an object:
-    bool close = distance < LIGHT.min;
+    bool close = distance < minLightDistance;
 
     if (close || far) break;
   }
@@ -35,8 +35,10 @@ float SoftShadow (in vec3 position, in vec3 direction) {
 // [Lambertian Shading Model]
 // REFLECTED_LIGHT = dot(LIGHT_DIRECTION, SURFACE_NORMAL):
 vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color, in vec3 normal) {
+  bool earth = normal != vec3(0.0);
+
   // Get normal map texture color for earth and default "SurfaceNormal" value otherwise:
-  vec3 surfaceNormal = normal == vec3(0.0) ? SurfaceNormal(position, 1) : normal;
+  vec3 surfaceNormal = earth ? normal : SurfaceNormal(position, 1);
   vec3 lightDirection = normalize(LIGHT.position - position);
 
   // [Phong Shading Model]
@@ -84,7 +86,8 @@ vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color, in vec3 norma
   vec3 specularDiffuse = specular + diffuse;
 
   #ifdef SOFT_SHADOWS
-    specularDiffuse *= SoftShadow(origin, lightPosition);
+    float minDistance = earth ? LIGHT.distance : LIGHT.min;
+    specularDiffuse *= SoftShadow(origin, lightPosition, minDistance);
   #else
     float objectDistance = raycast(origin, lightPosition).x;
 

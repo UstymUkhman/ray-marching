@@ -15,6 +15,8 @@
 
 `cd ray-marching`
 
+`cp -r ./dist/img/textures/* ./public/img/textures`
+
 ## Develop ##
 
 `yarn`

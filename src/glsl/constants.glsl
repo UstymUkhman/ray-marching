@@ -2,7 +2,7 @@
 #define DYNAMIC_FOG
 #define BUMP_MAPPING
 #define SOFT_SHADOWS
-// #define EARTH_TEXTURE
+#define EARTH_TEXTURE
 
 // #define DEBUGGING_CUBE
 #define ANTI_ALIASING 4
@@ -115,11 +115,11 @@ const Base BASE = Base(
 
 #ifdef EARTH_TEXTURE
   const Light LIGHT = Light(
-    vec3(40.0, 2.5, -30.0), // Position
-    0.05,                   // Initial distance
-    0.09,                   // Size
-    0.05,                   // Min light distance
-    60.0                    // Max light distance
+    vec3(60.0, 20.0, -45.0), // Position
+    0.05,                    // Initial distance
+    0.09,                    // Size
+    0.0001,                  // Min light distance
+    60.0                     // Max light distance
   );
 
 #else
