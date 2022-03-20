@@ -32,6 +32,12 @@ vec3 TransformSphere (in vec3 position) {
   return position;
 }
 
+vec3 TransformClouds (in vec3 position) {
+  vec3 clouds = TransformSphere(position);
+  PointRotation(clouds.xz, -time * 0.2);
+  return clouds;
+}
+
 // Tweak normal values for spherical meshes:
 vec3 SphericalNormal (in vec3 normal) {
   normal  = abs(normal);

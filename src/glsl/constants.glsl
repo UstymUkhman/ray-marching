@@ -2,9 +2,11 @@
 #define DYNAMIC_FOG
 #define BUMP_MAPPING
 #define SOFT_SHADOWS
-#define EARTH_TEXTURE
 
+#define EARTH_CLOUDS
+#define EARTH_TEXTURE
 // #define DEBUGGING_CUBE
+
 #define ANTI_ALIASING 4
 #define AMBIENT_OCCLUSSION
 
@@ -20,6 +22,7 @@ const struct ID {
   int box;
   int plane;
   int sphere;
+  int clouds;
   int pedestal;
 };
 
@@ -59,6 +62,8 @@ const struct Base {
 
 #else
   const struct Globe {
+    float cloudsOpacity;
+    float cloudsRadius;
     float distortion;
     float radius;
     float scale;
@@ -100,6 +105,8 @@ const Base BASE = Base(
 
 #else
   const Globe SPHERE = Globe(
+    0.5,       // Clouds Opacity
+    2.95,      // Clouds Radius
     0.0,       // Distortion
     3.0,       // Radius
     3.0 / RAD, // Scale
@@ -147,5 +154,6 @@ const ID IDs = ID(
   0, // Box
   1, // Plane
   2, // Sphere
-  3  // Pedestal
+  3, // Clouds
+  4  // Pedestal
 );

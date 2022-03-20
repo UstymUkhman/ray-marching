@@ -19,19 +19,19 @@ void main (void) {
   vec3 color = vec3(0.0);
 
   #ifndef ANTI_ALIASING
-    color = renderAAx1(color);
+    color = RenderAAx1(color);
 
   #elif ANTI_ALIASING == 4
-    color = renderAAx4(color);
+    color = RenderAAx4(color);
 
   #elif ANTI_ALIASING == 3
-    color = renderAAx3(color);
+    color = RenderAAx3(color);
 
   #elif ANTI_ALIASING == 2
-    color = renderAAx2(color);
+    color = RenderAAx2(color);
 
   #else
-    color = renderAAx1(color);
+    color = RenderAAx1(color);
   #endif
 
   color = pow(color, vec3(GAMMA));

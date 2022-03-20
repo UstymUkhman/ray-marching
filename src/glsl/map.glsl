@@ -47,3 +47,18 @@ vec2 MapScene (in vec3 ray) {
     return MergeObjects(scene, sphere);
   #endif
 }
+
+// Map ray to clouds:
+vec2 MapClouds (in vec3 ray) {
+  // Translate & rotate clouds coordinates:
+  vec3 position = TransformSphere(vec3(ray));
+
+  // Get clouds's current radius:
+  float radius = SPHERE.cloudsRadius;
+
+  // Create a sphere around the earth globe:
+  float cloudsDistance = Sphere(position, radius);
+
+  // Distance to clouds with its ID:
+  return vec2(cloudsDistance, IDs.clouds);
+}

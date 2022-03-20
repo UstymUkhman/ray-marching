@@ -17,6 +17,10 @@ uniform sampler2D black;
   #include "sphere.glsl";
 
   #ifdef EARTH_TEXTURE
+    #ifdef EARTH_CLOUDS
+      uniform sampler2D earthClouds;
+    #endif
+
     uniform sampler2D earthNormal;
     uniform sampler2D earthColor;
 
@@ -31,7 +35,7 @@ uniform sampler2D black;
 
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
-vec3 render (in vec3 color, in vec2 uv) {
+vec3 Render (in vec3 color, in vec2 uv) {
   vec3 rayOrigin = MouseMove();
   vec3 backgroundColor = vec3(0.0);
 
@@ -39,7 +43,7 @@ vec3 render (in vec3 color, in vec2 uv) {
   vec3 rayDirection = camera * normalize(vec3(uv, FOV));
 
   // Get raymarching distance result:
-  vec2 object = raycast(rayOrigin, rayDirection);
+  vec2 object = Raycast(rayOrigin, rayDirection, false);
 
   #ifdef DYNAMIC_FOG
     // Set dynamic fog & background colors:
@@ -80,7 +84,7 @@ vec3 render (in vec3 color, in vec2 uv) {
       // Get normal vector for each position:
       vec3 normal = SurfaceNormal(position, 1);
 
-      if (objectID == 2) {
+      if (objectID == 3) {
         objectColor = TriplanarMapping(black, position, normal);
       }
 
@@ -108,10 +112,7 @@ vec3 render (in vec3 color, in vec2 uv) {
               earthColor, TransformSphere(position)
             );
 
-            objectColor = mix(
-              vec3(1.0), earthTexture.rgb,
-              smoothstep(1.0, 0.99, abs(earthTexture.a * 0.72))
-            );
+            objectColor = earthTexture.rgb;
 
           #else
             // Update normal vector rotation:
@@ -138,6 +139,42 @@ vec3 render (in vec3 color, in vec2 uv) {
     // Sky background color:
     color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
   }
+
+  #if defined(EARTH_TEXTURE) && defined(EARTH_CLOUDS)
+    // Get raymarching clouds distance result:
+    float cloudsDistance = Raycast(rayOrigin, rayDirection, true).x;
+
+    if (cloudsDistance < RAY.distance) {
+      // Define ray's current position based on its
+      // origin, direction and hitted object's position:
+      vec3 position = rayOrigin + cloudsDistance * rayDirection;
+
+      // Update clouds position and rotation:
+      vec3 cloudsPosition = TransformClouds(position);
+
+      vec4 cloudsTexture = UsePlainTexture(
+        earthClouds, cloudsPosition
+      );
+
+      vec3 cloudsColor = cloudsTexture.rgb;
+
+      // Calculate clouds texture alpha value:
+      float alpha = cloudsColor.r + cloudsColor.g + cloudsColor.b;
+      alpha = alpha / 3.0 /* * length(light) */ * SPHERE.cloudsOpacity;
+
+      // Calculate clouds color based on its alpha and earth color:
+      float colorFactor = 1.0 + (SPHERE.radius - SPHERE.cloudsRadius);
+      cloudsColor = mix(color, cloudsColor, alpha) * colorFactor;
+
+      // Add more clouds on poles to hide texture mapping imperfections:
+      cloudsColor = mix(
+        cloudsColor, vec3(SPHERE.cloudsOpacity),
+        smoothstep(0.875, 1.0, abs(cloudsTexture.a * 0.72))
+      );
+
+      return cloudsColor;
+    }
+  #endif
 
   return color;
 }

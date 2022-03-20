@@ -10,7 +10,7 @@ void PointRotation45 (inout vec2 point) {
 }
 
 float MinVec3 (in vec3 vector) {
-	return max(vector.x, max(vector.y, vector.z));
+	return min(vector.x, min(vector.y, vector.z));
 }
 
 float MaxVec3 (in vec3 vector) {
