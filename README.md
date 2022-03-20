@@ -1,4 +1,4 @@
-# [RayMarching](https://ustymukhman.github.io/ray-marching/dist) #
+# [ray-marching](http://35.158.218.205/experiments/ray-marching/) #
 
 *GLSL RayMarching Experiment*
 
@@ -7,7 +7,7 @@
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/UstymUkhman/ray-marching?color=brightgreen)
 ![GitHub](https://img.shields.io/github/license/UstymUkhman/ray-marching?color=brightgreen)
 
-![](./public/img/preview.jpg)
+![](./public/img/preview.gif)
 
 ## Download ##
 

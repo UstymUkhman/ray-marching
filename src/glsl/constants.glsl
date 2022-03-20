@@ -3,6 +3,7 @@
 #define BUMP_MAPPING
 #define SOFT_SHADOWS
 
+#define EARTH_LIGHT
 #define EARTH_CLOUDS
 #define EARTH_TEXTURE
 // #define DEBUGGING_CUBE

@@ -16,11 +16,15 @@ uniform sampler2D black;
 #else
   #include "sphere.glsl";
 
-  #ifdef EARTH_TEXTURE
-    #ifdef EARTH_CLOUDS
-      uniform sampler2D earthClouds;
-    #endif
+  #ifdef EARTH_CLOUDS
+    uniform sampler2D earthClouds;
+  #endif
 
+  #ifdef EARTH_LIGHT
+    uniform sampler2D earthLight;
+  #endif
+
+  #ifdef EARTH_TEXTURE
     uniform sampler2D earthNormal;
     uniform sampler2D earthColor;
 
@@ -36,6 +40,7 @@ uniform sampler2D black;
 // Initialize ray origin and direction for
 // each pixel and render elements on scene:
 vec3 Render (in vec3 color, in vec2 uv) {
+  float lightIntensity = 0.0;
   vec3 rayOrigin = MouseMove();
   vec3 backgroundColor = vec3(0.0);
 
@@ -129,7 +134,9 @@ vec3 Render (in vec3 color, in vec2 uv) {
     }
 
     // Define object color and lighting when hitted:
-    color += Lighting(position, rayDirection, objectColor, normalColor);
+    vec3 light = Lighting(position, rayDirection, objectColor, normalColor);
+    lightIntensity = light.r + light.g + light.b;
+    color += light;
 
     // Set fog based on object & background colors:
     UseFog(color, backgroundColor, object.x);
@@ -139,6 +146,34 @@ vec3 Render (in vec3 color, in vec2 uv) {
     // Sky background color:
     color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
   }
+
+  #ifdef EARTH_LIGHT
+    // Get raymarching light distance result:
+    vec2 lightDistance = Raycast(rayOrigin, rayDirection, false);
+
+    if (lightDistance.x < RAY.distance) {
+      // Earth sphere:
+      if (int(object.y) == 2) {
+        // Define ray's current position based on its
+        // origin, direction and hitted object's position:
+        vec3 position = rayOrigin + lightDistance.x * rayDirection;
+
+        // Calculate light factor in dark zones:
+        float lightAmmount = lightIntensity / 3.0;
+        float lightFactor = 1.0 - lightAmmount;
+        lightFactor -= lightAmmount / 2.0;
+
+        if (lightFactor > 0.95) {
+          vec4 lightTexture = UsePlainTexture(
+            earthLight, TransformSphere(position)
+          );
+
+          // Update earth color with light texture only in dark zones:
+          color = color + vec3(lightFactor) * lightTexture.rgb;
+        }
+      }
+    }
+  #endif
 
   #if defined(EARTH_TEXTURE) && defined(EARTH_CLOUDS)
     // Get raymarching clouds distance result:
@@ -160,7 +195,7 @@ vec3 Render (in vec3 color, in vec2 uv) {
 
       // Calculate clouds texture alpha value:
       float alpha = cloudsColor.r + cloudsColor.g + cloudsColor.b;
-      alpha = alpha / 3.0 /* * length(light) */ * SPHERE.cloudsOpacity;
+      alpha = alpha / 3.0 * lightIntensity * SPHERE.cloudsOpacity;
 
       // Calculate clouds color based on its alpha and earth color:
       float colorFactor = 1.0 + (SPHERE.radius - SPHERE.cloudsRadius);
@@ -169,10 +204,10 @@ vec3 Render (in vec3 color, in vec2 uv) {
       // Add more clouds on poles to hide texture mapping imperfections:
       cloudsColor = mix(
         cloudsColor, vec3(SPHERE.cloudsOpacity),
-        smoothstep(0.875, 1.0, abs(cloudsTexture.a * 0.72))
+        smoothstep(0.925, 1.0, cloudsTexture.a * 0.7125)
       );
 
-      return cloudsColor;
+      color = cloudsColor;
     }
   #endif
 

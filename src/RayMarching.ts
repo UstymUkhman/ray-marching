@@ -1,9 +1,7 @@
-import FRAGMENT_SHADER from '@/glsl/main.frag';
-import VERTEX_SHADER from '@/glsl/main.vert';
-
 import EARTH_CLOUDS from '/img/textures/earth/clouds.jpg';
 import EARTH_NORMAL from '/img/textures/earth/normal.jpg';
 import EARTH_COLOR from '/img/textures/earth/color.jpg';
+import EARTH_LIGHT from '/img/textures/earth/light.jpg';
 import EARTH_BUMP from '/img/textures/earth/bump.jpg';
 
 import DEBUG from '/img/textures/debug.png';
@@ -11,6 +9,9 @@ import GREEN from '/img/textures/green.png';
 import BLACK from '/img/textures/black.png';
 import WHITE from '/img/textures/white.png';
 import BUMP from '/img/textures/bump.png';
+
+import VERTEX_SHADER from '@/glsl/main.vert';
+import FRAGMENT_SHADER from '@/glsl/main.frag';
 
 const lerp = (v0: number, v1: number, t: number): number =>
   v0 + t * (v1 - v0);
@@ -41,6 +42,7 @@ export default class RayMarching
     earthClouds: EARTH_CLOUDS,
     earthNormal: EARTH_NORMAL,
     earthColor: EARTH_COLOR,
+    earthLight: EARTH_LIGHT,
     earthBump: EARTH_BUMP,
 
     debug: DEBUG,

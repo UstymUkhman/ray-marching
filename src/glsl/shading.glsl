@@ -89,7 +89,7 @@ vec3 Lighting (in vec3 position, in vec3 direction, in vec3 color, in vec3 norma
     float minDistance = earth ? LIGHT.distance : LIGHT.min;
     specularDiffuse *= SoftShadow(origin, lightPosition, minDistance);
   #else
-    float objectDistance = Raycast(origin, lightPosition).x;
+    float objectDistance = Raycast(origin, lightPosition, false).x;
 
     // Distance to object is smaller than distance
     // to the light source, this point is in shadow:
