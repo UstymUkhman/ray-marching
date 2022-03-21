@@ -138,26 +138,8 @@ vec3 Render (in vec3 color, in vec2 uv) {
     lightIntensity = light.r + light.g + light.b;
     color += light;
 
-    // Set fog based on object & background colors:
-    UseFog(color, backgroundColor, object.x);
-  }
-
-  else {
-    // Sky background color:
-    color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
-  }
-
-  #ifdef EARTH_LIGHT
-    // Get raymarching light distance result:
-    vec2 lightDistance = Raycast(rayOrigin, rayDirection, false);
-
-    if (lightDistance.x < RAY.distance) {
-      // Earth sphere:
-      if (int(object.y) == 2) {
-        // Define ray's current position based on its
-        // origin, direction and hitted object's position:
-        vec3 position = rayOrigin + lightDistance.x * rayDirection;
-
+    #ifdef EARTH_LIGHT
+      if (objectID == 1) {
         // Calculate light factor in dark zones:
         float lightAmmount = lightIntensity / 3.0;
         float lightFactor = 1.0 - lightAmmount;
@@ -172,8 +154,16 @@ vec3 Render (in vec3 color, in vec2 uv) {
           color = color + vec3(lightFactor) * lightTexture.rgb;
         }
       }
-    }
-  #endif
+    #endif
+
+    // Set fog based on object & background colors:
+    UseFog(color, backgroundColor, object.x);
+  }
+
+  else {
+    // Sky background color:
+    color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
+  }
 
   #if defined(EARTH_TEXTURE) && defined(EARTH_CLOUDS)
     // Get raymarching clouds distance result:
@@ -202,10 +192,10 @@ vec3 Render (in vec3 color, in vec2 uv) {
       cloudsColor = mix(color, cloudsColor, alpha) * colorFactor;
 
       // Add more clouds on poles to hide texture mapping imperfections:
-      cloudsColor = mix(
-        cloudsColor, vec3(SPHERE.cloudsOpacity),
-        smoothstep(0.925, 1.0, cloudsTexture.a * 0.7125)
-      );
+      // cloudsColor = mix(
+      //   cloudsColor, vec3(SPHERE.cloudsOpacity),
+      //   smoothstep(0.9, 1.0, cloudsTexture.a * 0.7125)
+      // );
 
       color = cloudsColor;
     }

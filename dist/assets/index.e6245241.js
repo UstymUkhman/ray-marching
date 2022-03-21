@@ -1,4 +1,4 @@
-const h=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};h();var p="./img/textures/earth/clouds.jpg",v="./img/textures/earth/normal.jpg",g="./img/textures/earth/color.jpg",b="./img/textures/earth/light.jpg",x="./img/textures/earth/bump.jpg",E="./img/textures/debug.png",T="./img/textures/green.png",y="./img/textures/black.png",R="./img/textures/white.png",A="./img/textures/bump.png",D=`#version 300 es
+const h=function(){const n=document.createElement("link").relList;if(n&&n.supports&&n.supports("modulepreload"))return;for(const t of document.querySelectorAll('link[rel="modulepreload"]'))o(t);new MutationObserver(t=>{for(const i of t)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&o(r)}).observe(document,{childList:!0,subtree:!0});function e(t){const i={};return t.integrity&&(i.integrity=t.integrity),t.referrerpolicy&&(i.referrerPolicy=t.referrerpolicy),t.crossorigin==="use-credentials"?i.credentials="include":t.crossorigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function o(t){if(t.ep)return;t.ep=!0;const i=e(t);fetch(t.href,i)}};h();var p="./img/textures/earth/clouds.jpg",v="./img/textures/earth/normal.jpg",g="./img/textures/earth/color.jpg",b="./img/textures/earth/light.jpg",x="./img/textures/earth/bump.jpg",E="./img/textures/debug.png",T="./img/textures/green.png",R="./img/textures/black.png",y="./img/textures/white.png",A="./img/textures/bump.png",S=`#version 300 es
 
 precision mediump float;
 
@@ -6,7 +6,7 @@ in vec2 position;
 
 void main (void) {
   gl_Position = vec4(position, 1.0, 1.0);
-}`,S=`#version 300 es
+}`,D=`#version 300 es
 
 #ifndef GL_FRAGMENT_PRECISION_HIGH
   precision mediump float;
@@ -892,26 +892,8 @@ vec3 Render (in vec3 color, in vec2 uv) {
     lightIntensity = light.r + light.g + light.b;
     color += light;
 
-    
-    UseFog(color, backgroundColor, object.x);
-  }
-
-  else {
-    
-    color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
-  }
-
-  #ifdef EARTH_LIGHT
-    
-    vec2 lightDistance = Raycast(rayOrigin, rayDirection, false);
-
-    if (lightDistance.x < RAY.distance) {
-      
-      if (int(object.y) == 2) {
-        
-        
-        vec3 position = rayOrigin + lightDistance.x * rayDirection;
-
+    #ifdef EARTH_LIGHT
+      if (objectID == 1) {
         
         float lightAmmount = lightIntensity / 3.0;
         float lightFactor = 1.0 - lightAmmount;
@@ -926,8 +908,16 @@ vec3 Render (in vec3 color, in vec2 uv) {
           color = color + vec3(lightFactor) * lightTexture.rgb;
         }
       }
-    }
-  #endif
+    #endif
+
+    
+    UseFog(color, backgroundColor, object.x);
+  }
+
+  else {
+    
+    color += backgroundColor - max(0.9 * rayDirection.y, 0.0);
+  }
 
   #if defined(EARTH_TEXTURE) && defined(EARTH_CLOUDS)
     
@@ -956,10 +946,10 @@ vec3 Render (in vec3 color, in vec2 uv) {
       cloudsColor = mix(color, cloudsColor, alpha) * colorFactor;
 
       
-      cloudsColor = mix(
-        cloudsColor, vec3(SPHERE.cloudsOpacity),
-        smoothstep(0.925, 1.0, cloudsTexture.a * 0.7125)
-      );
+      
+      
+      
+      
 
       color = cloudsColor;
     }
@@ -1018,11 +1008,41 @@ vec3 RenderAAx4 (out vec3 color) {
 
   return color / 4.0;
 }
+highp float Random (const in vec2 uv) {
+  return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+highp vec3 Blend (const in vec3 base, const in vec3 blend) {
+  return mix(
+    1.0 - 2.0 * (1.0 - base) * (1.0 - blend),
+    2.0 * base * blend, step(base, vec3(0.5))
+  );
+}
+
+void Vignette (inout vec3 color, const in vec2 uv, const in vec2 resolution) {
+  vec2 position = uv;
+
+  position   -= 0.5;
+  position.x *= resolution.x / resolution.y;
+
+  color = mix(
+    vec3(0.0), color, smoothstep(
+      -0.5, 0.75, 1.0 - length(position)
+    )
+  );
+
+  color = mix(
+    color, Blend(color, vec3(
+      Random(uv * 0.1), Random(uv * 2.5), Random(uv)
+    )), 0.05
+  );
+}
 
 out vec4 fragColor;
 
 void main (void) {
   vec3 color = vec3(0.0);
+  vec2 uv = gl_FragCoord.xy / resolution;
 
   #ifndef ANTI_ALIASING
     color = RenderAAx1(color);
@@ -1041,5 +1061,6 @@ void main (void) {
   #endif
 
   color = pow(color, vec3(GAMMA));
+  Vignette(color, uv, resolution);
   fragColor = vec4(color, 1.0);
-}`;const M=(s,n,e)=>s+e*(n-s),c=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),l=5,a=7.5,d=10,u=20;class I{constructor(n){this.pressed=!1,this.startZoom=0,this.targetZoom=15,this.touchOffset=0,this.currentZoom=15,this.touchPosition=[0,0],this.mousePosition=[0,0],this.textures={earthClouds:p,earthNormal:v,earthColor:g,earthLight:b,earthBump:x,debug:E,green:T,black:y,white:R,bump:A},this.time=null,this.zoom=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/l,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.onWheel=this.wheel.bind(this),this.gl=this.createContext(n),this.program=this.createProgram(),this.program&&(this.createScene(),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(D,this.gl.VERTEX_SHADER),o=this.loadShader(S,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(){const n=this.program,e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.zoom=this.gl.getUniformLocation(n,"zoom"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){const o=Object.keys(this.textures),t=Object.values(this.textures).map(i=>this.loadTexture(i));Promise.all(t).then(i=>i.forEach(r=>{const f=this.gl[`TEXTURE${++e}`],m=this.gl.getUniformLocation(n,o[e]);this.gl.uniform1i(m,e),this.gl.activeTexture(f),this.gl.bindTexture(this.gl.TEXTURE_2D,r)}))}loadTexture(n){return new Promise((e,o)=>{const t=new Image,i=this.gl.createTexture();t.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,i),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,t),this.gl.generateMipmap(this.gl.TEXTURE_2D),e(i)},t.onerror=r=>o(r),t.src=n})}render(n){const e=Date.now()-this.startZoom,o=Math.min(e*.002,1),t=M(this.currentZoom,this.targetZoom,o);this.gl.uniform1f(this.zoom,-t),this.gl.uniform1f(this.time,n*1e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1),window.addEventListener("wheel",this.onWheel,!1)}touchStart(n){const{clientX:e,clientY:o}=n.touches[0];this.touchPosition=[e,o],this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e,clientY:o}=n.changedTouches[0],t=this.touchPosition[1]-o;let i=this.touchPosition[0]-e;i=this.touchOffset+=i,i/=this.touchSensitivity,this.targetZoom=this.zoomValue+-Math.sign(t)/a,this.targetZoom=c(this.targetZoom,d,u),this.gl.uniform1f(this.zoom,-this.targetZoom),this.gl.uniform2fv(this.mouse,[i,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=c(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/l,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}wheel({deltaY:n}){this.startZoom=Date.now(),this.currentZoom=this.zoomValue,n=Math.sign(-n)*a,this.targetZoom=this.currentZoom+n,this.targetZoom=c(this.targetZoom,d,u)}get zoomValue(){var o;const n=(o=this.program)!=null?o:this.gl.getParameter(this.gl.CURRENT_PROGRAM),e=this.gl.getUniformLocation(n,"zoom");return-this.gl.getUniform(n,e)}}new I(document.getElementById("scene"));
+}`;const M=(s,n,e)=>s+e*(n-s),c=(s,n=0,e=1)=>Math.max(n,Math.min(s,e)),l=5,a=7.5,d=10,u=20;class I{constructor(n){this.pressed=!1,this.startZoom=0,this.targetZoom=15,this.touchOffset=0,this.currentZoom=15,this.touchPosition=[0,0],this.mousePosition=[0,0],this.textures={earthClouds:p,earthNormal:v,earthColor:g,earthLight:b,earthBump:x,debug:E,green:T,black:R,white:y,bump:A},this.time=null,this.zoom=null,this.mouse=null,this.resolution=null,this.offsetBottom=window.innerHeight/l,this.offsetTop=-(window.innerHeight-this.offsetBottom),this.touchSensitivity=window.innerWidth/a|0,this.onTouchStart=this.touchStart.bind(this),this.onTouchMove=this.touchMove.bind(this),this.onTouchEnd=this.touchEnd.bind(this),this.onMouseDown=this.mouseDown.bind(this),this.onMouseMove=this.mouseMove.bind(this),this.onMouseUp=this.mouseUp.bind(this),this.onResize=this.resize.bind(this),this.onWheel=this.wheel.bind(this),this.gl=this.createContext(n),this.program=this.createProgram(),this.program&&(this.createScene(),this.addEventListeners(),requestAnimationFrame(this.render.bind(this)))}createContext(n){return n.getContext("webgl2",{powerPreference:"high-performance",failIfMajorPerformanceCaveat:!0,preserveDrawingBuffer:!1,premultipliedAlpha:!0,desynchronized:!0,xrCompatible:!1,antialias:!0,stencil:!0,alpha:!1,depth:!0})}createProgram(){const n=this.gl.createProgram(),e=this.loadShader(S,this.gl.VERTEX_SHADER),o=this.loadShader(D,this.gl.FRAGMENT_SHADER);return e&&o&&(this.gl.attachShader(n,e),this.gl.attachShader(n,o),this.gl.linkProgram(n)),this.gl.getProgramParameter(n,this.gl.LINK_STATUS)?n:console.error(this.gl.getProgramInfoLog(n))}createScene(){const n=this.program,e=this.gl.createBuffer(),o=new Float32Array([-1,1,1,1,1,-1,-1,1,1,-1,-1,-1]);this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT),this.gl.clearColor(0,0,0,1),this.gl.clearDepth(1),this.gl.enable(this.gl.DEPTH_TEST),this.gl.depthFunc(this.gl.LEQUAL),this.gl.bindBuffer(this.gl.ARRAY_BUFFER,e),this.gl.bufferData(this.gl.ARRAY_BUFFER,o,this.gl.STATIC_DRAW),this.time=this.gl.getUniformLocation(n,"time"),this.zoom=this.gl.getUniformLocation(n,"zoom"),this.mouse=this.gl.getUniformLocation(n,"mouse"),this.resolution=this.gl.getUniformLocation(n,"resolution"),n.position=this.gl.getAttribLocation(n,"position"),this.gl.enableVertexAttribArray(n.position),this.gl.vertexAttribPointer(n.position,2,this.gl.FLOAT,!1,0,0),this.gl.useProgram(n),this.loadTextures(n),this.resize()}loadShader(n,e){const o=this.gl.createShader(e);return this.gl.shaderSource(o,n),this.gl.compileShader(o),this.gl.getShaderParameter(o,this.gl.COMPILE_STATUS)?o:(console.error(this.gl.getShaderInfoLog(o)),this.gl.deleteShader(o))}loadTextures(n,e=-1){const o=Object.keys(this.textures),t=Object.values(this.textures).map(i=>this.loadTexture(i));Promise.all(t).then(i=>i.forEach(r=>{const f=this.gl[`TEXTURE${++e}`],m=this.gl.getUniformLocation(n,o[e]);this.gl.uniform1i(m,e),this.gl.activeTexture(f),this.gl.bindTexture(this.gl.TEXTURE_2D,r)}))}loadTexture(n){return new Promise((e,o)=>{const t=new Image,i=this.gl.createTexture();t.onload=()=>{this.gl.bindTexture(this.gl.TEXTURE_2D,i),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,t),this.gl.generateMipmap(this.gl.TEXTURE_2D),e(i)},t.onerror=r=>o(r),t.src=n})}render(n){const e=Date.now()-this.startZoom,o=Math.min(e*.002,1),t=M(this.currentZoom,this.targetZoom,o);this.gl.uniform1f(this.zoom,-t),this.gl.uniform1f(this.time,n*1e-4),this.gl.drawArrays(this.gl.TRIANGLES,0,6),requestAnimationFrame(this.render.bind(this))}addEventListeners(){document.addEventListener("touchstart",this.onTouchStart,!1),document.addEventListener("touchmove",this.onTouchMove,!1),document.addEventListener("touchend",this.onTouchEnd,!1),document.addEventListener("mousedown",this.onMouseDown,!1),document.addEventListener("mousemove",this.onMouseMove,!1),document.addEventListener("mouseup",this.onMouseUp,!1),window.addEventListener("resize",this.onResize,!1),window.addEventListener("wheel",this.onWheel,!1)}touchStart(n){const{clientX:e,clientY:o}=n.touches[0];this.touchPosition=[e,o],this.pressed=!0}touchMove(n){if(!this.pressed)return;const{clientX:e,clientY:o}=n.changedTouches[0],t=this.touchPosition[1]-o;let i=this.touchPosition[0]-e;i=this.touchOffset+=i,i/=this.touchSensitivity,this.targetZoom=this.zoomValue+-Math.sign(t)/a,this.targetZoom=c(this.targetZoom,d,u),this.gl.uniform1f(this.zoom,-this.targetZoom),this.gl.uniform2fv(this.mouse,[i,0])}touchEnd(){this.pressed=!1}mouseDown(){document.documentElement.requestPointerLock(),this.pressed=!0}mouseMove(n){if(!this.pressed)return;const e=this.mousePosition[0]-=n.movementX;let o=this.mousePosition[1]+=n.movementY;o=c(o,this.offsetTop,this.offsetBottom),this.gl.uniform2fv(this.mouse,[e,o])}mouseUp(){document.exitPointerLock(),this.pressed=!1}resize(){const n=window.innerWidth,e=window.innerHeight;this.offsetBottom=e/l,this.offsetTop=-(e-this.offsetBottom),this.touchSensitivity=n/a|0,this.gl.viewport(0,0,n,e),this.gl.uniform2fv(this.resolution,[n,e]),this.gl.canvas.height=e,this.gl.canvas.width=n}wheel({deltaY:n}){this.startZoom=Date.now(),this.currentZoom=this.zoomValue,n=Math.sign(-n)*a,this.targetZoom=this.currentZoom+n,this.targetZoom=c(this.targetZoom,d,u)}get zoomValue(){var o;const n=(o=this.program)!=null?o:this.gl.getParameter(this.gl.CURRENT_PROGRAM),e=this.gl.getUniformLocation(n,"zoom");return-this.gl.getUniform(n,e)}}new I(document.getElementById("scene"));
