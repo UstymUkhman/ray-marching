@@ -1,8 +1,8 @@
 {
 	"settings": {
 		"js-import.plainFileSuffix": "frag,fs,glsl,vert,vs",
+		"editor.bracketPairColorization.enabled": false,
     "js-import.filesToScan": "**/*.{ts,js}",
-
 		"vetur.validation.template": false,
 		"git.ignoreLimitWarning": true,
 		"js-import.semicolon": true,
