@@ -106,7 +106,7 @@ const Base BASE = Base(
 
 #else
   const Globe SPHERE = Globe(
-    0.5,       // Clouds Opacity
+    3.25,      // Clouds Opacity
     2.95,      // Clouds Radius
     0.0,       // Distortion
     3.0,       // Radius

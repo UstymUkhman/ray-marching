@@ -24,6 +24,6 @@ void Vignette (inout vec3 color, const in vec2 uv, const in vec2 resolution) {
   color = mix(
     color, Blend(color, vec3(
       Random(uv * 0.1), Random(uv * 2.5), Random(uv)
-    )), 0.05
+    )), 0.025
   );
 }

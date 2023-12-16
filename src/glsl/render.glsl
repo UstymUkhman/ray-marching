@@ -181,15 +181,15 @@ vec3 Render (in vec3 color, in vec2 uv) {
         earthClouds, cloudsPosition
       );
 
-      vec3 cloudsColor = cloudsTexture.rgb;
-
       // Calculate clouds texture alpha value:
-      float alpha = cloudsColor.r + cloudsColor.g + cloudsColor.b;
-      alpha = alpha / 3.0 * lightIntensity * SPHERE.cloudsOpacity;
+      float alpha = min(
+        cloudsTexture.g * lightIntensity * SPHERE.cloudsOpacity,
+        1.0
+      );
 
       // Calculate clouds color based on its alpha and earth color:
       float colorFactor = 1.0 + (SPHERE.radius - SPHERE.cloudsRadius);
-      cloudsColor = mix(color, cloudsColor, alpha) * colorFactor;
+      vec3 cloudsColor = mix(color, cloudsTexture.rgb, alpha) * colorFactor;
 
       // Add more clouds on poles to hide texture mapping imperfections:
       // cloudsColor = mix(

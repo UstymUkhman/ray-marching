@@ -34,7 +34,7 @@ vec3 TransformSphere (in vec3 position) {
 
 vec3 TransformClouds (in vec3 position) {
   vec3 clouds = TransformSphere(position);
-  PointRotation(clouds.xz, -time * 0.2);
+  PointRotation(clouds.xz, time * 0.5);
   return clouds;
 }
 

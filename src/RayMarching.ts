@@ -88,13 +88,13 @@ export default class RayMarching
       powerPreference: 'high-performance',
       failIfMajorPerformanceCaveat: true,
       preserveDrawingBuffer: false,
-      premultipliedAlpha: true,
+      premultipliedAlpha: false,
       desynchronized: true,
       xrCompatible: false,
       antialias: true,
-      stencil: true,
-      alpha: false,
-      depth: true
+      stencil: false,
+      depth: false,
+      alpha: true
     }) as WebGL2RenderingContext;
   }
 
@@ -183,6 +183,12 @@ export default class RayMarching
         this.gl.uniform1i(location, index);
         this.gl.activeTexture(activeTexture);
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
       })
     );
   }
@@ -204,7 +210,6 @@ export default class RayMarching
           image
         );
 
-        this.gl.generateMipmap(this.gl.TEXTURE_2D);
         resolve(texture);
       };
 
