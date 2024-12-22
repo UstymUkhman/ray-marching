@@ -1,4 +1,4 @@
-# [ray-marching](http://35.158.218.205/experiments/ray-marching/) #
+# [ray-marching](https://ustymukhman.github.io/ray-marching/dist/) #
 
 *GLSL RayMarching Experiment*
 
